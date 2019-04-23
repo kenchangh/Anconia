@@ -1,0 +1,6 @@
+{
+  "python.pythonPath": "venv/bin/python",
+  "[python]": {
+    "editor.tabSize": 4
+  }
+}
