@@ -6,6 +6,12 @@ enum MessageType {
   TRANSACTION = 1;
 }
 
+enum Color {
+  NONE = 0;
+  RED = 1;
+  BLUE = 2;
+}
+
 message CommonMessage {
   required MessageType message_type = 1;
 
@@ -16,7 +22,8 @@ message CommonMessage {
 }
 
 message Transaction {
-  
+  required Color color = 1;
+  required uint64 amount = 2;
 }
 
 message Join {

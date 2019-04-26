@@ -1,8 +1,8 @@
 import random
 
 NO_COLOR = 0
-BLUE_COLOR = 1
-RED_COLOR = 2
+RED_COLOR = 1
+BLUE_COLOR = 2
 
 
 def slush_algorithm(message_server, transaction):
@@ -19,7 +19,7 @@ def slush_algorithm(message_server, transaction):
     """
 
     query_nodes = []
-    if message_server.peers < NETWORK_SAMPLE_SIZE:
+    if len(message_server.peers) < NETWORK_SAMPLE_SIZE:
         query_nodes = list(message_server.peers)
     else:
         query_nodes = random.sample(

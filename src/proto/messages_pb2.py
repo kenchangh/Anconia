@@ -21,7 +21,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
   package='messages',
   syntax='proto2',
   serialized_options=None,
-  serialized_pb=_b('\n\x0emessages.proto\x12\x08messages\"\x9a\x01\n\rCommonMessage\x12+\n\x0cmessage_type\x18\x01 \x02(\x0e\x32\x15.messages.MessageType\x12\x1e\n\x04join\x18\x02 \x01(\x0b\x32\x0e.messages.JoinH\x00\x12,\n\x0btransaction\x18\x03 \x01(\x0b\x32\x15.messages.TransactionH\x00\x42\x0e\n\x0cmessage_body\"\r\n\x0bTransaction\"\x8a\x01\n\x04Join\x12\x0f\n\x07\x61\x64\x64ress\x18\x01 \x02(\t\x12\x0c\n\x04port\x18\x02 \x02(\x05\x12\x0e\n\x06pubkey\x18\x03 \x02(\t\x12\x10\n\x08nickname\x18\x04 \x01(\t\x12&\n\tjoin_type\x18\x05 \x02(\x0e\x32\x13.messages.Join.Type\"\x19\n\x04Type\x12\x08\n\x04INIT\x10\x00\x12\x07\n\x03\x41\x43K\x10\x01*(\n\x0bMessageType\x12\x08\n\x04JOIN\x10\x00\x12\x0f\n\x0bTRANSACTION\x10\x01')
+  serialized_pb=_b('\n\x0emessages.proto\x12\x08messages\"\x9a\x01\n\rCommonMessage\x12+\n\x0cmessage_type\x18\x01 \x02(\x0e\x32\x15.messages.MessageType\x12\x1e\n\x04join\x18\x02 \x01(\x0b\x32\x0e.messages.JoinH\x00\x12,\n\x0btransaction\x18\x03 \x01(\x0b\x32\x15.messages.TransactionH\x00\x42\x0e\n\x0cmessage_body\"=\n\x0bTransaction\x12\x1e\n\x05\x63olor\x18\x01 \x02(\x0e\x32\x0f.messages.Color\x12\x0e\n\x06\x61mount\x18\x02 \x02(\x04\"\x8a\x01\n\x04Join\x12\x0f\n\x07\x61\x64\x64ress\x18\x01 \x02(\t\x12\x0c\n\x04port\x18\x02 \x02(\x05\x12\x0e\n\x06pubkey\x18\x03 \x02(\t\x12\x10\n\x08nickname\x18\x04 \x01(\t\x12&\n\tjoin_type\x18\x05 \x02(\x0e\x32\x13.messages.Join.Type\"\x19\n\x04Type\x12\x08\n\x04INIT\x10\x00\x12\x07\n\x03\x41\x43K\x10\x01*(\n\x0bMessageType\x12\x08\n\x04JOIN\x10\x00\x12\x0f\n\x0bTRANSACTION\x10\x01*$\n\x05\x43olor\x12\x08\n\x04NONE\x10\x00\x12\x07\n\x03RED\x10\x01\x12\x08\n\x04\x42LUE\x10\x02')
 )
 
 _MESSAGETYPE = _descriptor.EnumDescriptor(
@@ -41,14 +41,44 @@ _MESSAGETYPE = _descriptor.EnumDescriptor(
   ],
   containing_type=None,
   serialized_options=None,
-  serialized_start=341,
-  serialized_end=381,
+  serialized_start=389,
+  serialized_end=429,
 )
 _sym_db.RegisterEnumDescriptor(_MESSAGETYPE)
 
 MessageType = enum_type_wrapper.EnumTypeWrapper(_MESSAGETYPE)
+_COLOR = _descriptor.EnumDescriptor(
+  name='Color',
+  full_name='messages.Color',
+  filename=None,
+  file=DESCRIPTOR,
+  values=[
+    _descriptor.EnumValueDescriptor(
+      name='NONE', index=0, number=0,
+      serialized_options=None,
+      type=None),
+    _descriptor.EnumValueDescriptor(
+      name='RED', index=1, number=1,
+      serialized_options=None,
+      type=None),
+    _descriptor.EnumValueDescriptor(
+      name='BLUE', index=2, number=2,
+      serialized_options=None,
+      type=None),
+  ],
+  containing_type=None,
+  serialized_options=None,
+  serialized_start=431,
+  serialized_end=467,
+)
+_sym_db.RegisterEnumDescriptor(_COLOR)
+
+Color = enum_type_wrapper.EnumTypeWrapper(_COLOR)
 JOIN = 0
 TRANSACTION = 1
+NONE = 0
+RED = 1
+BLUE = 2
 
 
 _JOIN_TYPE = _descriptor.EnumDescriptor(
@@ -68,8 +98,8 @@ _JOIN_TYPE = _descriptor.EnumDescriptor(
   ],
   containing_type=None,
   serialized_options=None,
-  serialized_start=314,
-  serialized_end=339,
+  serialized_start=362,
+  serialized_end=387,
 )
 _sym_db.RegisterEnumDescriptor(_JOIN_TYPE)
 
@@ -129,6 +159,20 @@ _TRANSACTION = _descriptor.Descriptor(
   file=DESCRIPTOR,
   containing_type=None,
   fields=[
+    _descriptor.FieldDescriptor(
+      name='color', full_name='messages.Transaction.color', index=0,
+      number=1, type=14, cpp_type=8, label=2,
+      has_default_value=False, default_value=0,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='amount', full_name='messages.Transaction.amount', index=1,
+      number=2, type=4, cpp_type=4, label=2,
+      has_default_value=False, default_value=0,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
   ],
   extensions=[
   ],
@@ -142,7 +186,7 @@ _TRANSACTION = _descriptor.Descriptor(
   oneofs=[
   ],
   serialized_start=185,
-  serialized_end=198,
+  serialized_end=246,
 )
 
 
@@ -201,8 +245,8 @@ _JOIN = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=201,
-  serialized_end=339,
+  serialized_start=249,
+  serialized_end=387,
 )
 
 _COMMONMESSAGE.fields_by_name['message_type'].enum_type = _MESSAGETYPE
@@ -214,12 +258,14 @@ _COMMONMESSAGE.fields_by_name['join'].containing_oneof = _COMMONMESSAGE.oneofs_b
 _COMMONMESSAGE.oneofs_by_name['message_body'].fields.append(
   _COMMONMESSAGE.fields_by_name['transaction'])
 _COMMONMESSAGE.fields_by_name['transaction'].containing_oneof = _COMMONMESSAGE.oneofs_by_name['message_body']
+_TRANSACTION.fields_by_name['color'].enum_type = _COLOR
 _JOIN.fields_by_name['join_type'].enum_type = _JOIN_TYPE
 _JOIN_TYPE.containing_type = _JOIN
 DESCRIPTOR.message_types_by_name['CommonMessage'] = _COMMONMESSAGE
 DESCRIPTOR.message_types_by_name['Transaction'] = _TRANSACTION
 DESCRIPTOR.message_types_by_name['Join'] = _JOIN
 DESCRIPTOR.enum_types_by_name['MessageType'] = _MESSAGETYPE
+DESCRIPTOR.enum_types_by_name['Color'] = _COLOR
 _sym_db.RegisterFileDescriptor(DESCRIPTOR)
 
 CommonMessage = _reflection.GeneratedProtocolMessageType('CommonMessage', (_message.Message,), dict(
