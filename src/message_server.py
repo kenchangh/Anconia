@@ -4,13 +4,13 @@ import binascii
 from threading import Thread
 import logging
 from proto import messages_pb2
-from common import create_message
+from message_client import MessageClient
 
 
 class MessageServer:
-    def __init__(self, consensus_algorithm):
+    def __init__(self, message_client):
         self.color = messages_pb2.NONE_COLOR
-        self.consensus_algorithm = consensus_algorithm
+        self.message_client = message_client
         self.sock = None
         self.logger = logging.getLogger('main')
         self.peers = set([])
@@ -34,6 +34,22 @@ class MessageServer:
         listener_thread.start()
         return address, port
 
+    def listen_to_messages(self, sock):
+        address, port = sock.getsockname()
+        self.logger.info(f'Listening to messages on {address}:{port}')
+        while True:
+            conn, _ = sock.accept()
+            with conn:
+                try:
+                    raw_msg = conn.recv(1024)
+                    if raw_msg:
+                        response = self.handle_message(raw_msg)
+                        if response:
+                            conn.sendall(response)
+                    conn.close()
+                except socket.error as e:
+                    raise e
+
     def handle_message(self, raw_msg):
         common_msg = messages_pb2.CommonMessage()
         common_msg.ParseFromString(raw_msg)
@@ -55,41 +71,9 @@ class MessageServer:
         sub_msg.CopyFrom(getattr(common_msg, attr_name))
         return handler_function(sub_msg)
 
-    def listen_to_messages(self, sock):
-        address, port = sock.getsockname()
-        self.logger.info(f'Listening to messages on {address}:{port}')
-        while True:
-            conn, _ = sock.accept()
-            with conn:
-                try:
-                    raw_msg = conn.recv(1024)
-                    if raw_msg:
-                        response = self.handle_message(raw_msg)
-                        if response:
-                            conn.sendall(response)
-                    conn.close()
-                except socket.error as e:
-                    raise e
-
-    def send_message(self, node, msg):
-        addr, port = node
-        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-            print('Connecting to', addr, port)
-            s.connect((addr, port))
-            s.sendall(msg)
-            data = s.recv(1024)
-            return data
-
-    def broadcast_message(self, msg):
-        responses = []
-        for addr, port in self.peers:
-            node = (addr, port)
-            self.send_message(node, msg)
-        return responses
-
     def handle_transaction(self, txn_msg):
         self.logger.info('Received transaction')
-        self.consensus_algorithm(self, txn_msg)
+        self.message_client.run_consensus(txn_msg)
 
     def handle_node_query(self, query_msg):
         response_color = None
@@ -99,10 +83,10 @@ class MessageServer:
             response_color = self.color
         response_query = messages_pb2.NodeQuery()
         response_query.color = response_color
-        msg = create_message(messages_pb2.NODE_QUERY_MESSAGE, query_msg)
+        msg = MessageClient.create_message(
+            messages_pb2.NODE_QUERY_MESSAGE, query_msg)
         return msg
 
     def add_peer(self, join_msg):
         new_peer = (join_msg.address, join_msg.port)
-        self.peers.add(new_peer)
-        self.logger.info(f'Added new peer {join_msg.address}:{join_msg.port}')
+        self.message_client.add_peer(new_peer)

@@ -2,7 +2,8 @@ import socket
 import binascii
 from threading import Thread
 import logging
-from common import MCAST_GRP, MCAST_PORT, create_message
+from common import MCAST_GRP, MCAST_PORT
+from message_client import MessageClient
 from proto import messages_pb2
 
 
@@ -31,7 +32,7 @@ class DiscoveryServer:
         else:
             join_msg.join_type = messages_pb2.Join.INIT_JOIN
 
-        msg = create_message(messages_pb2.JOIN_MESSAGE, join_msg)
+        msg = MessageClient.create_message(messages_pb2.JOIN_MESSAGE, join_msg)
         return msg
 
     def multicast_join(self, address, port):
