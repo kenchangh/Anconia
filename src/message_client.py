@@ -5,6 +5,14 @@ import logging
 from proto import messages_pb2
 
 
+# TO BE UPDATED PERIODICALLY
+ATTR_NAMES = {
+    messages_pb2.NODE_QUERY_MESSAGE: 'node_query',
+    messages_pb2.JOIN_MESSAGE: 'join',
+    messages_pb2.TRANSACTION_MESSAGE: 'transaction',
+}
+
+
 class MessageClient:
     def __init__(self, consensus_algorithm):
         self.peers = set([])
@@ -13,13 +21,19 @@ class MessageClient:
         self.logger = logging.getLogger('main')
 
     @staticmethod
+    def get_sub_message(message_type, message):
+        attr_name = ATTR_NAMES.get(message_type)
+        if not attr_name:
+            raise ValueError(
+                f'Invalid message_type {message_type}, or ATTR_NAMES not updated')
+
+        common_msg = messages_pb2.CommonMessage()
+        common_msg.ParseFromString(message)
+        sub_msg = getattr(common_msg, attr_name)
+        return sub_msg
+
+    @staticmethod
     def create_message(message_type, sub_msg):
-        # TO BE UPDATED PERIODICALLY
-        ATTR_NAMES = {
-            messages_pb2.NODE_QUERY_MESSAGE: 'node_query',
-            messages_pb2.JOIN_MESSAGE: 'join',
-            messages_pb2.TRANSACTION_MESSAGE: 'transaction',
-        }
         common_msg = messages_pb2.CommonMessage()
         common_msg.message_type = message_type
 
