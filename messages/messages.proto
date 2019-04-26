@@ -2,14 +2,15 @@ syntax = "proto2";
 package messages;
 
 enum MessageType {
-  JOIN = 0;
-  TRANSACTION = 1;
+  JOIN_MESSAGE = 0;
+  TRANSACTION_MESSAGE = 1;
+  NODE_QUERY_MESSAGE = 2;
 }
 
 enum Color {
-  NONE = 0;
-  RED = 1;
-  BLUE = 2;
+  NONE_COLOR = 0;
+  RED_COLOR = 1;
+  BLUE_COLOR = 2;
 }
 
 message CommonMessage {
@@ -18,7 +19,12 @@ message CommonMessage {
   oneof message_body {
     Join join = 2;
     Transaction transaction = 3;
+    NodeQuery node_query = 4;
   }
+}
+
+message NodeQuery {
+  required Color color = 1;
 }
 
 message Transaction {
@@ -33,8 +39,8 @@ message Join {
   optional string nickname = 4;
 
   enum Type {
-    INIT = 0;
-    ACK = 1;
+    INIT_JOIN = 0;
+    ACK_JOIN = 1;
   } 
   required Type join_type = 5;
 }

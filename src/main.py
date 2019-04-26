@@ -6,6 +6,7 @@ from proto import messages_pb2
 from message_server import MessageServer
 from discovery_server import DiscoveryServer
 from consensus import slush_algorithm
+from common import create_message
 
 logger = logging.getLogger('main')
 logging.basicConfig(level=logging.INFO)
@@ -32,12 +33,9 @@ class Anconia:
         time.sleep(2)
         common_msg = messages_pb2.CommonMessage()
         txn_msg = messages_pb2.Transaction()
-        txn_msg.color = messages_pb2.BLUE
+        txn_msg.color = messages_pb2.BLUE_COLOR
         txn_msg.amount = 100
-        common_msg.message_type = messages_pb2.TRANSACTION
-        common_msg.transaction.CopyFrom(txn_msg)
-        msg = common_msg.SerializeToString()
-
+        msg = create_message(messages_pb2.TRANSACTION_MESSAGE, txn_msg)
         self.message_server.broadcast_message(msg)
         logger.info('Sent transaction')
 

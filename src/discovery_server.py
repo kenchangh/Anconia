@@ -2,7 +2,7 @@ import socket
 import binascii
 from threading import Thread
 import logging
-from common import MCAST_GRP, MCAST_PORT
+from common import MCAST_GRP, MCAST_PORT, create_message
 from proto import messages_pb2
 
 
@@ -27,15 +27,11 @@ class DiscoveryServer:
         join_msg.nickname = self.nickname
 
         if ack:
-            join_msg.join_type = messages_pb2.Join.ACK
+            join_msg.join_type = messages_pb2.Join.ACK_JOIN
         else:
-            join_msg.join_type = messages_pb2.Join.INIT
+            join_msg.join_type = messages_pb2.Join.INIT_JOIN
 
-        common_msg = messages_pb2.CommonMessage()
-        common_msg.message_type = messages_pb2.JOIN
-        common_msg.join.CopyFrom(join_msg)
-
-        msg = common_msg.SerializeToString()
+        msg = create_message(messages_pb2.JOIN_MESSAGE, join_msg)
         return msg
 
     def multicast_join(self, address, port):

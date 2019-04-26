@@ -1,15 +1,13 @@
+from proto import messages_pb2
+from common import create_message
 import random
-
-NO_COLOR = 0
-RED_COLOR = 1
-BLUE_COLOR = 2
 
 
 def slush_algorithm(message_server, transaction):
     QUERY_TIMEOUT = 10
     NETWORK_SAMPLE_SIZE = 10
 
-    color = NO_COLOR
+    current_color = message_server.color
 
     """
     1. Start uncolored node
@@ -24,3 +22,10 @@ def slush_algorithm(message_server, transaction):
     else:
         query_nodes = random.sample(
             message_server.peers, NETWORK_SAMPLE_SIZE)
+
+    for node in query_nodes:
+        node_query = messages_pb2.NodeQuery()
+        node_query.color = transaction.color
+        msg = create_message(messages_pb2.NODE_QUERY_MESSAGE, node_query)
+        response = message_server.send_message(node, msg)
+        print(response)
