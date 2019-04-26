@@ -9,8 +9,10 @@ from proto import peerbook_pb2
 class MessageServer:
     def __init__(self):
         self.sock = None
-        self.conn = None
         self.logger = logging.getLogger('main')
+        self.peers = set([])
+        self.address = None
+        self.port = None
 
     def bind_to_open_port(self):
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -18,6 +20,8 @@ class MessageServer:
         sock.listen(1)
         address, port = sock.getsockname()
         self.sock = sock
+        self.address = address
+        self.port = port
         return address, port
 
     def start(self):
@@ -38,3 +42,8 @@ class MessageServer:
                     print(data)
                 except socket.error as e:
                     raise e
+
+    def add_peer(self, join_msg):
+        self.logger.info(f'Added new peer {join_msg.address}:{join_msg.port}')
+        new_peer = (join_msg.address, join_msg.port)
+        self.peers.add(new_peer)

@@ -7,23 +7,22 @@ from proto import peerbook_pb2
 
 
 class DiscoveryServer:
-    def __init__(self, address, port, pubkey, nickname=''):
+    def __init__(self, message_server, pubkey, nickname=''):
         self.logger = logging.getLogger('main')
-        self.message_server_address = address
-        self.message_server_port = port
+        self.message_server = message_server
         self.pubkey = pubkey
         self.nickname = nickname
 
     def start(self):
-        self.multicast_join(self.message_server_address,
-                            self.message_server_port)
+        self.multicast_join(self.message_server.address,
+                            self.message_server.port)
         listener_thread = Thread(target=self.listen_multicast)
         listener_thread.start()
 
     def create_join_message(self, ack=False):
         join_msg = peerbook_pb2.Join()
-        join_msg.address = self.message_server_address
-        join_msg.port = self.message_server_port
+        join_msg.address = self.message_server.address
+        join_msg.port = self.message_server.port
         join_msg.pubkey = self.pubkey
         join_msg.nickname = self.nickname
 
@@ -68,6 +67,7 @@ class DiscoveryServer:
                 data, addr = sock.recvfrom(1024)
                 join_msg = peerbook_pb2.Join()
                 join_msg.ParseFromString(data)
+                self.message_server.add_peer(join_msg)
 
                 ack_msg = self.create_join_message(ack=True)
                 with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
@@ -75,6 +75,6 @@ class DiscoveryServer:
                     s.sendall(ack_msg)
                     data = s.recv(1024)
             except socket.error as e:
-                print('Expection')
+                print(e)
                 hexdata = binascii.hexlify(data)
                 print('Data = %s' % hexdata)
