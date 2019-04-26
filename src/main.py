@@ -9,11 +9,13 @@ logging.basicConfig(level=logging.INFO)
 
 class Anconia:
     def start(self):
-        discovery_server = DiscoveryServer()
         message_server = MessageServer()
+        address, port = message_server.start()
 
+        pubkey = '123'
+        nickname = 'abc'
+        discovery_server = DiscoveryServer(address, port, pubkey, nickname)
         discovery_server.start()
-        message_server.start()
 
 
 if __name__ == '__main__':

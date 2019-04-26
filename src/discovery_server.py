@@ -3,22 +3,44 @@ import binascii
 from threading import Thread
 import logging
 from common import MCAST_GRP, MCAST_PORT
+from proto import peerbook_pb2
 
 
 class DiscoveryServer:
-    def __init__(self):
+    def __init__(self, address, port, pubkey, nickname=''):
         self.logger = logging.getLogger('main')
+        self.message_server_address = address
+        self.message_server_port = port
+        self.pubkey = pubkey
+        self.nickname = nickname
 
     def start(self):
-        self.multicast_join()
+        self.multicast_join(self.message_server_address,
+                            self.message_server_port)
         listener_thread = Thread(target=self.listen_multicast)
         listener_thread.start()
 
-    def multicast_join(self):
+    def create_join_message(self, ack=False):
+        join_msg = peerbook_pb2.Join()
+        join_msg.address = self.message_server_address
+        join_msg.port = self.message_server_port
+        join_msg.pubkey = self.pubkey
+        join_msg.nickname = self.nickname
+
+        if ack:
+            join_msg.message_type = peerbook_pb2.Join.ACK
+        else:
+            join_msg.message_type = peerbook_pb2.Join.INIT
+
+        msg = join_msg.SerializeToString()
+        return msg
+
+    def multicast_join(self, address, port):
+        msg = self.create_join_message()
         sock = socket.socket(
             socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP)
         sock.setsockopt(socket.IPPROTO_IP, socket.IP_MULTICAST_TTL, 32)
-        sock.sendto(b'Hello World!', (MCAST_GRP, MCAST_PORT))
+        sock.sendto(msg, (MCAST_GRP, MCAST_PORT))
         self.logger.info('Multicasted JOIN message to ' +
                          MCAST_GRP+':'+str(MCAST_PORT))
 
@@ -44,7 +66,14 @@ class DiscoveryServer:
         while True:
             try:
                 data, addr = sock.recvfrom(1024)
-                print(data, addr)
+                join_msg = peerbook_pb2.Join()
+                join_msg.ParseFromString(data)
+
+                ack_msg = self.create_join_message(ack=True)
+                with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+                    s.connect((join_msg.address, join_msg.port))
+                    s.sendall(ack_msg)
+                    data = s.recv(1024)
             except socket.error as e:
                 print('Expection')
                 hexdata = binascii.hexlify(data)

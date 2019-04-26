@@ -1,0 +1,16 @@
+syntax = "proto2";
+
+package messages;
+
+message Join {
+  required string address = 1;
+  required int32 port = 2;
+  required string pubkey = 3;
+  optional string nickname = 4;
+
+  enum Type {
+    INIT = 0;
+    ACK = 1;
+  } 
+  required Type message_type = 5 [default  = INIT];
+}
