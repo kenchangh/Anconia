@@ -3,7 +3,7 @@ import binascii
 from threading import Thread
 import logging
 from common import MCAST_GRP, MCAST_PORT
-from proto import peerbook_pb2
+from proto import messages_pb2
 
 
 class DiscoveryServer:
@@ -20,18 +20,22 @@ class DiscoveryServer:
         listener_thread.start()
 
     def create_join_message(self, ack=False):
-        join_msg = peerbook_pb2.Join()
+        join_msg = messages_pb2.Join()
         join_msg.address = self.message_server.address
         join_msg.port = self.message_server.port
         join_msg.pubkey = self.pubkey
         join_msg.nickname = self.nickname
 
         if ack:
-            join_msg.message_type = peerbook_pb2.Join.ACK
+            join_msg.join_type = messages_pb2.Join.ACK
         else:
-            join_msg.message_type = peerbook_pb2.Join.INIT
+            join_msg.join_type = messages_pb2.Join.INIT
 
-        msg = join_msg.SerializeToString()
+        common_msg = messages_pb2.CommonMessage()
+        common_msg.message_type = messages_pb2.JOIN
+        common_msg.join.CopyFrom(join_msg)
+
+        msg = common_msg.SerializeToString()
         return msg
 
     def multicast_join(self, address, port):
@@ -64,9 +68,12 @@ class DiscoveryServer:
 
         while True:
             try:
-                data, addr = sock.recvfrom(1024)
-                join_msg = peerbook_pb2.Join()
-                join_msg.ParseFromString(data)
+                data, _ = sock.recvfrom(1024)
+                common_msg = messages_pb2.CommonMessage()
+                common_msg.ParseFromString(data)
+
+                join_msg = messages_pb2.Join()
+                join_msg.CopyFrom(common_msg.join)
                 self.message_server.add_peer(join_msg)
 
                 ack_msg = self.create_join_message(ack=True)
@@ -76,5 +83,5 @@ class DiscoveryServer:
                     data = s.recv(1024)
             except socket.error as e:
                 print(e)
-                hexdata = binascii.hexlify(data)
-                print('Data = %s' % hexdata)
+                # hexdata = binascii.hexlify(data)
+                print(f'Data = {data}')

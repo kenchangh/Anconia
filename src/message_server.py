@@ -3,11 +3,16 @@ import struct
 import binascii
 from threading import Thread
 import logging
-from proto import peerbook_pb2
+from proto import messages_pb2
+
+
+JOIN_MESSAGE_TYPE = 0
+TRANSACTION_MESSAGE_TYPE = 1
 
 
 class MessageServer:
-    def __init__(self):
+    def __init__(self, consensus_algorithm):
+        self.consensus_algorithm = consensus_algorithm
         self.sock = None
         self.logger = logging.getLogger('main')
         self.peers = set([])
@@ -31,6 +36,11 @@ class MessageServer:
         listener_thread.start()
         return address, port
 
+    def handle_message(self, raw_msg):
+        common_msg = messages_pb2.CommonMessage()
+        common_msg.ParseFromString(raw_msg)
+        print(common_msg)
+
     def listen_to_messages(self, sock):
         address, port = sock.getsockname()
         self.logger.info(f'Listening to messages on {address}:{port}')
@@ -38,12 +48,12 @@ class MessageServer:
         with conn:
             while True:
                 try:
-                    data = conn.recvfrom(1024)
-                    print(data)
+                    raw_msg, _ = conn.recvfrom(1024)
+                    self.handle_message(raw_msg)
                 except socket.error as e:
                     raise e
 
     def add_peer(self, join_msg):
-        self.logger.info(f'Added new peer {join_msg.address}:{join_msg.port}')
         new_peer = (join_msg.address, join_msg.port)
         self.peers.add(new_peer)
+        self.logger.info(f'Added new peer {join_msg.address}:{join_msg.port}')

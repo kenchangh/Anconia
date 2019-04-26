@@ -1,0 +1,33 @@
+syntax = "proto2";
+package messages;
+
+enum MessageType {
+  JOIN = 0;
+  TRANSACTION = 1;
+}
+
+message CommonMessage {
+  required MessageType message_type = 1;
+
+  oneof message_body {
+    Join join = 2;
+    Transaction transaction = 3;
+  }
+}
+
+message Transaction {
+  
+}
+
+message Join {
+  required string address = 1;
+  required int32 port = 2;
+  required string pubkey = 3;
+  optional string nickname = 4;
+
+  enum Type {
+    INIT = 0;
+    ACK = 1;
+  } 
+  required Type join_type = 5;
+}

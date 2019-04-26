@@ -2,6 +2,7 @@ import logging
 
 from message_server import MessageServer
 from discovery_server import DiscoveryServer
+from consensus import slush_algorithm
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
@@ -9,7 +10,7 @@ logging.basicConfig(level=logging.INFO)
 
 class Anconia:
     def start(self):
-        message_server = MessageServer()
+        message_server = MessageServer(consensus_algorithm=slush_algorithm)
         message_server.start()
 
         pubkey = '123'
