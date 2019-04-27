@@ -11,18 +11,20 @@ from discovery_server import DiscoveryServer
 from consensus import slush_algorithm
 
 logger = logging.getLogger('main')
+handler = logging.StreamHandler(sys.stdout)
+formatter = logging.Formatter(
+    '%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+handler.setFormatter(formatter)
+logger.addHandler(handler)
+logger.propagate = False
 
 
 class Anconia:
-    def start(self, host=None, port=None):
+    def start(self, host=None, port=None, pubkey='123', nickname='abc'):
         message_client = MessageClient(consensus_algorithm=slush_algorithm)
-        message_client.schedule_transaction()
-
         message_server = MessageServer(message_client, host=host, port=port)
         message_server.start()
 
-        pubkey = '123'
-        nickname = 'abc'
         discovery_server = DiscoveryServer(
             message_server, pubkey, nickname)
         discovery_server.start()

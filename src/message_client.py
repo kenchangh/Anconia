@@ -57,7 +57,7 @@ class MessageClient:
     def send_message(self, node, msg):
         addr, port = node
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-            print('Connecting to', addr, port)
+            self.logger.debug(f'Connecting to {addr}:{port}')
             s.connect((addr, port))
             s.sendall(msg)
             data = s.recv(1024)
@@ -74,16 +74,11 @@ class MessageClient:
             self.logger.info('No peers, did not broadcast transaction')
         return responses
 
-    def schedule_transaction(self):
-        txn_thread = threading.Thread(target=self.create_transaction)
-        txn_thread.start()
-
-    def create_transaction(self):
-        time.sleep(2)
+    def generate_transaction(self, color, amount):
         common_msg = messages_pb2.CommonMessage()
         txn_msg = messages_pb2.Transaction()
-        txn_msg.color = messages_pb2.BLUE_COLOR
-        txn_msg.amount = 100
+        txn_msg.color = color
+        txn_msg.amount = amount
         msg = MessageClient.create_message(
             messages_pb2.TRANSACTION_MESSAGE, txn_msg)
-        self.broadcast_message(msg)
+        return msg

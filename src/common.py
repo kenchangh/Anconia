@@ -7,3 +7,8 @@ COLOR_MAP = {
     messages_pb2.RED_COLOR: 'red',
     messages_pb2.BLUE_COLOR: 'blue',
 }
+
+INVERSE_COLOR_MAP = {
+    'red': messages_pb2.RED_COLOR,
+    'blue': messages_pb2.BLUE_COLOR,
+}
