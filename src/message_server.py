@@ -8,20 +8,25 @@ from message_client import MessageClient
 
 
 class MessageServer:
-    def __init__(self, message_client):
+    def __init__(self, message_client, host=None, port=None):
         self.color = messages_pb2.NONE_COLOR
         self.message_client = message_client
         self.sock = None
         self.logger = logging.getLogger('main')
         self.peers = set([])
-        self.address = None
-        self.port = None
+        self.address = host
+        self.port = port
 
     def bind_to_open_port(self):
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        sock.bind(("", 0))
+        connect_to = ('', 0)
+        if self.address and self.port:
+            connect_to = (self.address, self.port)
+
+        sock.bind(connect_to)
         sock.listen(1)
         address, port = sock.getsockname()
+
         self.sock = sock
         self.address = address
         self.port = port
