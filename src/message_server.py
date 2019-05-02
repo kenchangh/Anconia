@@ -5,6 +5,7 @@ from threading import Thread
 import logging
 from proto import messages_pb2
 from message_client import MessageClient
+from common import COLOR_MAP
 
 
 class MessageServer:
@@ -82,6 +83,8 @@ class MessageServer:
 
     def handle_node_query(self, query_msg):
         response_color = None
+        self.logger.debug(
+            f'Received node query with color "{COLOR_MAP[query_msg.color]}"')
         if self.color == messages_pb2.NONE_COLOR:
             response_color = query_msg.color
         else:

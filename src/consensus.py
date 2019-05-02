@@ -22,7 +22,7 @@ def the_other_color(color):
 def slush_algorithm(message_client, transaction):
     current_color = transaction.color
     other_color = the_other_color(current_color)
-    logging.debug(f'Transaction color is {COLOR_MAP[current_color]}')
+    logger.debug(f'Transaction color is {COLOR_MAP[current_color]}')
 
     """
     1. Start uncolored node
@@ -31,13 +31,6 @@ def slush_algorithm(message_client, transaction):
     4. Queried nodes return own color, or respond with that color if uncolored
     """
 
-    query_nodes = []
-    if len(message_client.peers) < NETWORK_SAMPLE_SIZE:
-        query_nodes = list(message_client.peers)
-    else:
-        query_nodes = random.sample(
-            message_client.peers, NETWORK_SAMPLE_SIZE)
-
     flip_threshold = math.floor(ALPHA_PARAM * NETWORK_SAMPLE_SIZE)
     color_responses = {
         messages_pb2.RED_COLOR: 0,
@@ -45,12 +38,21 @@ def slush_algorithm(message_client, transaction):
     }
 
     for step in range(QUERY_ROUNDS):
+        query_nodes = []
+        if len(message_client.peers) < NETWORK_SAMPLE_SIZE:
+            query_nodes = list(message_client.peers)
+        else:
+            query_nodes = random.sample(
+                message_client.peers, NETWORK_SAMPLE_SIZE)
+
         for node in query_nodes:
             node_query = messages_pb2.NodeQuery()
             node_query.color = transaction.color
             msg = MessageClient.create_message(
                 messages_pb2.NODE_QUERY_MESSAGE, node_query)
             response = message_client.send_message(node, msg)
+            if not response:
+                continue
             query_msg = MessageClient.get_sub_message(
                 messages_pb2.NODE_QUERY_MESSAGE, response)
 

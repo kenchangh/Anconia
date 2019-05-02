@@ -3,6 +3,7 @@ import time
 import threading
 import logging
 from proto import messages_pb2
+from common import exponential_backoff
 
 
 # TO BE UPDATED PERIODICALLY
@@ -14,11 +15,12 @@ ATTR_NAMES = {
 
 
 class MessageClient:
-    def __init__(self, consensus_algorithm):
+    def __init__(self, consensus_algorithm, light_client=False):
         self.peers = set([])
         self.color = messages_pb2.NONE_COLOR
         self.consensus_algorithm = consensus_algorithm
         self.logger = logging.getLogger('main')
+        self.is_light_client = light_client
 
     @staticmethod
     def get_sub_message(message_type, message):
@@ -55,6 +57,22 @@ class MessageClient:
         self.logger.info(f'Added new peer {addr}:{port}')
 
     def send_message(self, node, msg):
+        args = (node, msg)
+        result = exponential_backoff(self.logger, self._send_message, args, timeout=0.001,
+                                     max_retry=5, expected_exception=ConnectionRefusedError)
+
+        # failure to send a message to node should remove the peer from the peers list
+        # however, the send_message could also originate from the client apps
+        if isinstance(result, Exception):
+            if not self.is_light_client:
+                self.peers.remove(node)
+            addr, port = node
+            self.logger.debug(
+                f'Removed peer {addr}:{port} due to inability to respond')
+            return
+        return result
+
+    def _send_message(self, node, msg):
         addr, port = node
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
             self.logger.debug(f'Connecting to {addr}:{port}')

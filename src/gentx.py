@@ -9,7 +9,8 @@ def create_transaction(addr, port, color_str, amount=100):
     if not color_int:
         return ValueError(f'No such color "{color_str}"')
 
-    client = MessageClient(consensus_algorithm=slush_algorithm)
+    client = MessageClient(
+        consensus_algorithm=slush_algorithm, light_client=True)
     msg = client.generate_transaction(color_int, amount)
     client.send_message((addr, port), msg)
 
