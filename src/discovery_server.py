@@ -4,7 +4,7 @@ import binascii
 from threading import Thread
 import logging
 import traceback
-from common import MCAST_GRP, MCAST_PORT
+from common import MCAST_GRP, MCAST_PORT, exponential_backoff
 from message_client import MessageClient
 from proto import messages_pb2
 
@@ -73,33 +73,35 @@ class DiscoveryServer:
                         socket.inet_aton(MCAST_GRP) + socket.inet_aton(host))
 
         while True:
-            try:
-                data, _ = sock.recvfrom(1024)
-                common_msg = messages_pb2.CommonMessage()
-                common_msg.ParseFromString(data)
+            data, _ = sock.recvfrom(1024)
+            args = (data,)
+            handler_thread = Thread(
+                target=self.handle_multicast_message, args=args)
+            handler_thread.start()
 
-                join_msg = messages_pb2.Join()
-                join_msg.CopyFrom(common_msg.join)
-                peer = (join_msg.address, join_msg.port)
+    def handle_multicast_message(self, data):
+        try:
+            common_msg = messages_pb2.CommonMessage()
+            common_msg.ParseFromString(data)
 
-                # ignore self
-                if join_msg.address == self.host and join_msg.port == self.port:
-                    continue
+            join_msg = messages_pb2.Join()
+            join_msg.CopyFrom(common_msg.join)
+            peer = (join_msg.address, join_msg.port)
 
-                self.message_client.add_peer(peer)
+            # ignore self
+            if join_msg.address == self.host and join_msg.port == self.port:
+                return
+            self.message_client.add_peer(peer)
+            ack_msg = self.create_join_message(ack=True)
+            self.message_client.send_message(peer, ack_msg)
 
-                ack_msg = self.create_join_message(ack=True)
-                with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-                    s.connect((join_msg.address, join_msg.port))
-                    s.sendall(ack_msg)
-                    data = s.recv(1024)
-            except socket.error:
-                common_msg = messages_pb2.CommonMessage()
-                common_msg.ParseFromString(data)
-                print(f"""{traceback.print_exc()}
+        except socket.error:
+            common_msg = messages_pb2.CommonMessage()
+            common_msg.ParseFromString(data)
+            print(f"""{traceback.print_exc()}
 
 My_Host = {self.host}
 My_Port = {self.port}
 Data = {data}
 Parsed = {common_msg}
-                """)
+            """)

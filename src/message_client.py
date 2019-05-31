@@ -57,9 +57,7 @@ class MessageClient:
         self.logger.info(f'Added new peer {addr}:{port}')
 
     def send_message(self, node, msg):
-        args = (node, msg)
-        result = exponential_backoff(self.logger, self._send_message, args, timeout=0.001,
-                                     max_retry=5, expected_exception=ConnectionRefusedError)
+        result = self._send_message(node, msg)
 
         # failure to send a message to node should remove the peer from the peers list
         # however, the send_message could also originate from the client apps
@@ -76,9 +74,19 @@ class MessageClient:
         addr, port = node
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
             self.logger.debug(f'Connecting to {addr}:{port}')
-            s.connect((addr, port))
-            s.sendall(msg)
-            data = s.recv(1024)
+            err = exponential_backoff(self.logger, s.connect,
+                                      ((addr, port),), timeout=0.01, max_retry=5)
+            if err:
+                return err
+
+            err = exponential_backoff(self.logger, s.sendall,
+                                      (msg,), timeout=0.01, max_retry=5)
+            if err:
+                return err
+
+            data = exponential_backoff(
+                self.logger, s.recv, (1024,), timeout=0.001, max_retry=5)
+
             return data
 
     def broadcast_message(self, msg):
