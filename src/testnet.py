@@ -5,7 +5,6 @@ import sys
 
 
 def start_anconia(host, port):
-    sys.stdout = open(str(os.getpid()) + ".out", "a")
     anconia = Anconia()
     anconia.start(host=host, port=port)
 
@@ -20,6 +19,8 @@ def launch_testnet(network_size=10):
             p = Process(target=start_anconia, args=(addr, port))
             p.start()
             processes.append(p)
+        for p in processes:
+            p.join()
     except:
         for p in processes:
             p.terminate()

@@ -67,4 +67,5 @@ def slush_algorithm(message_client, transaction):
             current_color = other_color
 
     logger.info(f'Concluded with color {COLOR_MAP[current_color]}')
+    message_client.color = current_color
     return current_color

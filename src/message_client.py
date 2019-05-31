@@ -93,7 +93,6 @@ class MessageClient:
         return responses
 
     def generate_transaction(self, color, amount):
-        common_msg = messages_pb2.CommonMessage()
         txn_msg = messages_pb2.Transaction()
         txn_msg.color = color
         txn_msg.amount = amount

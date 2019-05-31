@@ -1,29 +1,34 @@
+import time
 import socket
 import binascii
 from threading import Thread
 import logging
+import traceback
 from common import MCAST_GRP, MCAST_PORT
 from message_client import MessageClient
 from proto import messages_pb2
 
 
 class DiscoveryServer:
-    def __init__(self, message_server, pubkey, nickname=''):
+    def __init__(self, message_client, host, port, pubkey, nickname=''):
         self.logger = logging.getLogger('main')
-        self.message_server = message_server
+        self.host = host
+        self.port = port
         self.pubkey = pubkey
         self.nickname = nickname
+        self.message_client = message_client
 
     def start(self):
-        self.multicast_join(self.message_server.address,
-                            self.message_server.port)
         listener_thread = Thread(target=self.listen_multicast)
         listener_thread.start()
+        joiner_thread = Thread(
+            target=self.delayed_multicast_join, args=(5, self.host, self.port))
+        joiner_thread.start()
 
     def create_join_message(self, ack=False):
         join_msg = messages_pb2.Join()
-        join_msg.address = self.message_server.address
-        join_msg.port = self.message_server.port
+        join_msg.address = self.host
+        join_msg.port = self.port
         join_msg.pubkey = self.pubkey
         join_msg.nickname = self.nickname
 
@@ -35,14 +40,18 @@ class DiscoveryServer:
         msg = MessageClient.create_message(messages_pb2.JOIN_MESSAGE, join_msg)
         return msg
 
+    def delayed_multicast_join(self, delay=5, *args):
+        time.sleep(delay)
+        self.multicast_join(*args)
+
     def multicast_join(self, address, port):
         msg = self.create_join_message()
-        sock = socket.socket(
-            socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP)
-        sock.setsockopt(socket.IPPROTO_IP, socket.IP_MULTICAST_TTL, 32)
-        sock.sendto(msg, (MCAST_GRP, MCAST_PORT))
-        self.logger.info('Multicasted JOIN message to ' +
-                         MCAST_GRP+':'+str(MCAST_PORT))
+        with socket.socket(
+                socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP) as sock:
+            sock.setsockopt(socket.IPPROTO_IP, socket.IP_MULTICAST_TTL, 32)
+            sock.sendto(msg, (MCAST_GRP, MCAST_PORT))
+            self.logger.info('Multicasted JOIN message to ' +
+                             MCAST_GRP+':'+str(MCAST_PORT))
 
     def listen_multicast(self):
         self.logger.info('Listening to multicast ' +
@@ -71,14 +80,26 @@ class DiscoveryServer:
 
                 join_msg = messages_pb2.Join()
                 join_msg.CopyFrom(common_msg.join)
-                self.message_server.add_peer(join_msg)
+                peer = (join_msg.address, join_msg.port)
+
+                # ignore self
+                if join_msg.address == self.host and join_msg.port == self.port:
+                    continue
+
+                self.message_client.add_peer(peer)
 
                 ack_msg = self.create_join_message(ack=True)
                 with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
                     s.connect((join_msg.address, join_msg.port))
                     s.sendall(ack_msg)
                     data = s.recv(1024)
-            except socket.error as e:
-                print(e)
-                # hexdata = binascii.hexlify(data)
-                print(f'Data = {data}')
+            except socket.error:
+                common_msg = messages_pb2.CommonMessage()
+                common_msg.ParseFromString(data)
+                print(f"""{traceback.print_exc()}
+
+My_Host = {self.host}
+My_Port = {self.port}
+Data = {data}
+Parsed = {common_msg}
+                """)
