@@ -3,7 +3,7 @@ import math
 import logging
 from proto import messages_pb2
 from message_client import MessageClient
-from common import COLOR_MAP
+from common import COLOR_MAP, INVERSE_COLOR_MAP
 
 QUERY_ROUNDS = 10
 QUERY_TIMEOUT = 10
@@ -56,6 +56,8 @@ def slush_algorithm(message_client, transaction):
             query_msg = MessageClient.get_sub_message(
                 messages_pb2.NODE_QUERY_MESSAGE, response)
 
+            logger.debug(
+                f"Query result is '{COLOR_MAP[query_msg.color]}'")
             if query_msg.color == messages_pb2.RED_COLOR or query_msg.color == messages_pb2.BLUE_COLOR:
                 color_responses[query_msg.color] += 1
             else:

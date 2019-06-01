@@ -29,7 +29,7 @@ class MessageServer:
             connect_to = (self.address, self.port)
 
         sock.bind(connect_to)
-        sock.listen(10)
+        sock.listen(16)
         address, port = sock.getsockname()
 
         self.sock = sock
@@ -58,7 +58,7 @@ class MessageServer:
                     #     self.logger, conn.sendall,
                     #     (response,), timeout=0.01, max_retry=5)
                     conn.sendall(response)
-            # conn.close()
+            conn.close()
         except socket.error as e:
             # self.logger.error(e)
             # traceback.print_exc()
@@ -73,25 +73,28 @@ class MessageServer:
         sock.close()
 
     def handle_message(self, raw_msg):
-        common_msg = messages_pb2.CommonMessage()
-        common_msg.ParseFromString(raw_msg)
+        try:
+            common_msg = messages_pb2.CommonMessage()
+            common_msg.ParseFromString(raw_msg)
 
-        message_handlers = {
-            messages_pb2.JOIN_MESSAGE: ('Join', 'join', self.add_peer),
-            messages_pb2.TRANSACTION_MESSAGE: ('Transaction', 'transaction', self.handle_transaction),
-            messages_pb2.NODE_QUERY_MESSAGE: (
-                'NodeQuery', 'node_query', self.handle_node_query),
-        }
+            message_handlers = {
+                messages_pb2.JOIN_MESSAGE: ('Join', 'join', self.add_peer),
+                messages_pb2.TRANSACTION_MESSAGE: ('Transaction', 'transaction', self.handle_transaction),
+                messages_pb2.NODE_QUERY_MESSAGE: (
+                    'NodeQuery', 'node_query', self.handle_node_query),
+            }
 
-        handler = message_handlers.get(common_msg.message_type)
-        if not handler:
-            raise ValueError(
-                f"There is no message type {common_msg.message_type} or handler not created yet")
+            handler = message_handlers.get(common_msg.message_type)
+            if not handler:
+                raise ValueError(
+                    f"There is no message type {common_msg.message_type} or handler not created yet")
 
-        message_classname, attr_name, handler_function = handler
-        sub_msg = getattr(messages_pb2, message_classname)()
-        sub_msg.CopyFrom(getattr(common_msg, attr_name))
-        return handler_function(sub_msg)
+            message_classname, attr_name, handler_function = handler
+            sub_msg = getattr(messages_pb2, message_classname)()
+            sub_msg.CopyFrom(getattr(common_msg, attr_name))
+            return handler_function(sub_msg)
+        except Exception as e:
+            traceback.print_exc()
 
     def handle_transaction(self, txn_msg):
         self.logger.info('Received transaction')
@@ -99,10 +102,11 @@ class MessageServer:
 
     def handle_node_query(self, query_msg):
         response_color = None
-        if self.color == messages_pb2.NONE_COLOR:
+        if self.message_client.color == messages_pb2.NONE_COLOR:
             response_color = query_msg.color
+            self.message_client.color = response_color
         else:
-            response_color = self.color
+            response_color = self.message_client.color
         response_query = messages_pb2.NodeQuery()
         response_query.color = response_color
         msg = MessageClient.create_message(

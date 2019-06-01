@@ -9,6 +9,7 @@ from message_server import MessageServer
 from message_client import MessageClient
 from discovery_server import DiscoveryServer
 from consensus import slush_algorithm
+from gentx import create_random_transactions
 
 logger = logging.getLogger('main')
 handler = logging.StreamHandler(sys.stdout)
@@ -28,6 +29,7 @@ class Anconia:
             message_client, host, port, pubkey, nickname)
         discovery_server.start()
 
+        create_random_transactions(message_client)
         message_server.start()
 
 

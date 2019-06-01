@@ -56,7 +56,8 @@ class MessageClient:
         self.logger.info(f'Added new peer {addr}:{port}')
 
     def send_message(self, node, msg):
-        result = self._send_message(node, msg)
+        result = exponential_backoff(
+            self.logger, self._send_message, (node, msg))
 
         # failure to send a message to node should remove the peer from the peers list
         # however, the send_message could also originate from the client apps
@@ -94,7 +95,8 @@ class MessageClient:
 
     def broadcast_message(self, msg):
         responses = []
-        for addr, port in self.peers:
+        peers = set(self.peers)
+        for addr, port in peers:
             node = (addr, port)
             self.send_message(node, msg)
         if self.peers:
