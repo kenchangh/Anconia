@@ -1,6 +1,11 @@
 #!/usr/bin/env bash
 
-max=${MAX:=6}
+if [[ -z "${MAX_NODES}" ]]; then
+  max=8
+else
+  max=$MAX_NODES
+fi
+
 port=5000
 
 function cleanup {
@@ -9,7 +14,7 @@ function cleanup {
 
 trap cleanup EXIT
 
-for i in `seq 0 $max`
+for i in `seq 1 $max`
 do
   printf "Running node $i\n"
   python3 main.py --verbose --host 127.0.0.1 --port $port &

@@ -65,7 +65,7 @@ def slush_algorithm(message_client, transaction):
 
         if color_responses[other_color] > flip_threshold:
             logger.info(
-                f'Flipped to color {COLOR_MAP[current_color]} at step {step}')
+                f'Flipped to color {COLOR_MAP[other_color]} at step {step}')
             current_color = other_color
 
     logger.info(f'Concluded with color {COLOR_MAP[current_color]}')

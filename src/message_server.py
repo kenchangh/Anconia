@@ -110,7 +110,7 @@ class MessageServer:
         response_query = messages_pb2.NodeQuery()
         response_query.color = response_color
         msg = MessageClient.create_message(
-            messages_pb2.NODE_QUERY_MESSAGE, query_msg)
+            messages_pb2.NODE_QUERY_MESSAGE, response_query)
         return msg
 
     def add_peer(self, join_msg):
