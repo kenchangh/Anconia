@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-max=4
+max=8
 port=5000
 
 function cleanup {

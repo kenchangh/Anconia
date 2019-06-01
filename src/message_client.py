@@ -72,22 +72,26 @@ class MessageClient:
 
     def _send_message(self, node, msg):
         addr, port = node
-        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-            self.logger.debug(f'Connecting to {addr}:{port}')
-            err = exponential_backoff(self.logger, s.connect,
-                                      ((addr, port),), timeout=0.01, max_retry=5)
-            if err:
-                return err
+        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.logger.debug(f'Connecting to {addr}:{port}')
+        # err = exponential_backoff(self.logger, s.connect,
+        #                           ((addr, port),), timeout=0.01, max_retry=5)
+        # if err:
+        #     return err
 
-            err = exponential_backoff(self.logger, s.sendall,
-                                      (msg,), timeout=0.01, max_retry=5)
-            if err:
-                return err
+        # err = exponential_backoff(self.logger, s.sendall,
+        #                           (msg,), timeout=0.01, max_retry=5)
+        # if err:
+        #     return err
 
-            data = exponential_backoff(
-                self.logger, s.recv, (1024,), timeout=0.001, max_retry=5)
+        # data = exponential_backoff(
+        #     self.logger, s.recv, (1024,), timeout=0.001, max_retry=5)
 
-            return data
+        s.connect((addr, port))
+        s.sendall(msg)
+        data = s.recv(1024)
+
+        return data
 
     def broadcast_message(self, msg):
         responses = []

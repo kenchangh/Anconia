@@ -28,7 +28,7 @@ class MessageServer:
             connect_to = (self.address, self.port)
 
         sock.bind(connect_to)
-        sock.listen(1)
+        sock.listen(10)
         address, port = sock.getsockname()
 
         self.sock = sock
@@ -46,17 +46,18 @@ class MessageServer:
 
     def start_connection_thread(self, conn):
         try:
-            raw_msg = exponential_backoff(
-                self.logger, conn.recv,
-                (1024,), timeout=0.01, max_retry=5)
+            # raw_msg = exponential_backoff(
+            #     self.logger, conn.recv,
+            #     (1024,), timeout=0.01, max_retry=5)
+            raw_msg = conn.recv(1024)
             if raw_msg:
                 response = self.handle_message(raw_msg)
                 if response:
-                    exponential_backoff(
-                        self.logger, conn.sendall,
-                        (response,), timeout=0.01, max_retry=5)
+                    # exponential_backoff(
+                    #     self.logger, conn.sendall,
+                    #     (response,), timeout=0.01, max_retry=5)
                     conn.sendall(response)
-            conn.close()
+            # conn.close()
         except socket.error as e:
             # self.logger.error(e)
             # traceback.print_exc()
