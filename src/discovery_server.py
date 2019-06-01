@@ -4,6 +4,7 @@ import binascii
 from threading import Thread
 import logging
 import traceback
+from concurrent.futures import ThreadPoolExecutor
 from common import MCAST_GRP, MCAST_PORT, exponential_backoff
 from message_client import MessageClient
 from proto import messages_pb2
@@ -17,6 +18,7 @@ class DiscoveryServer:
         self.pubkey = pubkey
         self.nickname = nickname
         self.message_client = message_client
+        self.thread_executor = ThreadPoolExecutor(max_workers=8)
 
     def start(self):
         listener_thread = Thread(target=self.listen_multicast)
@@ -74,10 +76,7 @@ class DiscoveryServer:
 
         while True:
             data, _ = sock.recvfrom(1024)
-            args = (data,)
-            handler_thread = Thread(
-                target=self.handle_multicast_message, args=args)
-            handler_thread.start()
+            self.thread_executor.submit(self.handle_multicast_message, data)
 
     def handle_multicast_message(self, data):
         try:

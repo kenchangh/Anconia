@@ -1,6 +1,5 @@
 import socket
 import time
-import threading
 import logging
 from proto import messages_pb2
 from common import exponential_backoff

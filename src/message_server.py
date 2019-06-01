@@ -3,7 +3,7 @@ import struct
 import binascii
 from threading import Thread
 import logging
-import multiprocessing
+from concurrent.futures import ThreadPoolExecutor
 import socketserver
 import traceback
 from proto import messages_pb2
@@ -20,6 +20,7 @@ class MessageServer:
         self.address = host
         self.port = port
         self.listener_thread = None
+        self.thread_executor = ThreadPoolExecutor(max_workers=8)
 
     def bind_to_open_port(self):
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -68,10 +69,7 @@ class MessageServer:
         self.logger.info(f'Listening to messages on {address}:{port}')
         while True:
             conn, _ = sock.accept()
-            args = (conn,)
-            conn_thread = Thread(
-                target=self.start_connection_thread, args=args)
-            conn_thread.start()
+            self.thread_executor.submit(self.start_connection_thread, conn)
         sock.close()
 
     def handle_message(self, raw_msg):
