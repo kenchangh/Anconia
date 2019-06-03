@@ -34,10 +34,7 @@ def snowball_algorithm(message_client, txn_color):
     """
 
     query_success_threshold = math.floor(ALPHA_PARAM * NETWORK_SAMPLE_SIZE)
-    color_responses = {
-        messages_pb2.RED_COLOR: 0,
-        messages_pb2.BLUE_COLOR: 0,
-    }
+
     confidence = {
         messages_pb2.RED_COLOR: 0,
         messages_pb2.BLUE_COLOR: 0,
@@ -51,6 +48,11 @@ def snowball_algorithm(message_client, txn_color):
             query_nodes = random.sample(
                 message_client.peers, NETWORK_SAMPLE_SIZE)
 
+        color_responses = {
+            messages_pb2.RED_COLOR: 0,
+            messages_pb2.BLUE_COLOR: 0,
+        }
+
         for node in query_nodes:
             node_query = messages_pb2.NodeQuery()
             node_query.color = current_color
@@ -62,17 +64,21 @@ def snowball_algorithm(message_client, txn_color):
             query_msg = MessageClient.get_sub_message(
                 messages_pb2.NODE_QUERY_MESSAGE, response)
 
-            logger.debug(
-                f"Query result is '{COLOR_MAP[query_msg.color]}'")
+            # logger.debug(
+            #     f"Query result is '{COLOR_MAP[query_msg.color]}'")
             if query_msg.color == messages_pb2.RED_COLOR or query_msg.color == messages_pb2.BLUE_COLOR:
                 color_responses[query_msg.color] += 1
             else:
                 raise ValueError(f'Invalid color {query_msg.color}')
 
         if color_responses[current_color] >= query_success_threshold:
+            logger.debug(
+                f"{color_responses[current_color]} responses for {COLOR_MAP[current_color]}")
             query_count += 1
             confidence[current_color] += 1
-        else:
+        elif color_responses[other_color] >= query_success_threshold:
+            logger.debug(
+                f"{color_responses[other_color]} responses for {COLOR_MAP[other_color]}")
             query_count = 0
             confidence[other_color] += 1
 
@@ -82,7 +88,7 @@ def snowball_algorithm(message_client, txn_color):
             current_color = other_color
         else:
             logger.info(
-                f'Remained current color {COLOR_MAP[current_color]}')
+                f'Remained with current color {COLOR_MAP[current_color]}')
 
     logger.info(f'Concluded with color {COLOR_MAP[current_color]}')
     message_client.color = current_color
