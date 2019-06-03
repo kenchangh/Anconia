@@ -20,7 +20,7 @@ def the_other_color(color):
     return messages_pb2.RED_COLOR
 
 
-def snowflake_algorithm(message_client, txn_color):
+def snowball_algorithm(message_client, txn_color):
     current_color = txn_color
     query_count = 0
     other_color = the_other_color(current_color)
@@ -33,8 +33,12 @@ def snowflake_algorithm(message_client, txn_color):
     4. Queried nodes return own color, or respond with that color if uncolored
     """
 
-    flip_threshold = math.floor(ALPHA_PARAM * NETWORK_SAMPLE_SIZE)
+    query_success_threshold = math.floor(ALPHA_PARAM * NETWORK_SAMPLE_SIZE)
     color_responses = {
+        messages_pb2.RED_COLOR: 0,
+        messages_pb2.BLUE_COLOR: 0,
+    }
+    confidence = {
         messages_pb2.RED_COLOR: 0,
         messages_pb2.BLUE_COLOR: 0,
     }
@@ -65,13 +69,18 @@ def snowflake_algorithm(message_client, txn_color):
             else:
                 raise ValueError(f'Invalid color {query_msg.color}')
 
-        if color_responses[other_color] > flip_threshold:
+        if color_responses[current_color] >= query_success_threshold:
+            query_count += 1
+            confidence[current_color] += 1
+        else:
             query_count = 0
+            confidence[other_color] += 1
+
+        if confidence[other_color] > confidence[current_color]:
             logger.info(
                 f'Flipped to color {COLOR_MAP[other_color]}')
             current_color = other_color
-        elif color_responses[current_color] > flip_threshold:
-            query_count += 1
+        else:
             logger.info(
                 f'Remained current color {COLOR_MAP[current_color]}')
 
