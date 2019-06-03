@@ -19,8 +19,8 @@ def the_other_color(color):
     return messages_pb2.RED_COLOR
 
 
-def slush_algorithm(message_client, transaction):
-    current_color = transaction.color
+def slush_algorithm(message_client, txn_color):
+    current_color = txn_color
     other_color = the_other_color(current_color)
     logger.debug(f'Transaction color is {COLOR_MAP[current_color]}')
 
@@ -47,7 +47,7 @@ def slush_algorithm(message_client, transaction):
 
         for node in query_nodes:
             node_query = messages_pb2.NodeQuery()
-            node_query.color = transaction.color
+            node_query.color = current_color
             msg = MessageClient.create_message(
                 messages_pb2.NODE_QUERY_MESSAGE, node_query)
             response = message_client.send_message(node, msg)

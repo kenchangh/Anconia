@@ -98,13 +98,14 @@ class MessageServer:
 
     def handle_transaction(self, txn_msg):
         self.logger.info('Received transaction')
-        self.message_client.run_consensus(txn_msg)
+        self.message_client.run_consensus(txn_msg.color)
 
     def handle_node_query(self, query_msg):
         response_color = None
         if self.message_client.color == messages_pb2.NONE_COLOR:
             response_color = query_msg.color
             self.message_client.color = response_color
+            self.message_client.run_consensus(response_color)
         else:
             response_color = self.message_client.color
         response_query = messages_pb2.NodeQuery()
