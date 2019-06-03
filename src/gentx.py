@@ -3,7 +3,7 @@ import time
 import random
 from message_client import MessageClient
 from threading import Thread
-from consensus import slush_algorithm
+from consensus import snowflake_algorithm
 from common import COLOR_MAP, INVERSE_COLOR_MAP
 
 
@@ -13,7 +13,7 @@ def create_transaction(addr, port, color_str, amount=100):
         return ValueError(f'No such color "{color_str}"')
 
     client = MessageClient(
-        consensus_algorithm=slush_algorithm, light_client=True)
+        consensus_algorithm=snowflake_algorithm, light_client=True)
     msg = client.generate_transaction(color_int, amount)
     client.send_message((addr, port), msg)
 

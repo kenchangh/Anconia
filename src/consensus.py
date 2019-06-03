@@ -9,6 +9,7 @@ QUERY_ROUNDS = 10
 QUERY_TIMEOUT = 10
 NETWORK_SAMPLE_SIZE = 10
 ALPHA_PARAM = 0.5
+BETA_PARAM = 10
 
 logger = logging.getLogger('main')
 
@@ -19,8 +20,9 @@ def the_other_color(color):
     return messages_pb2.RED_COLOR
 
 
-def slush_algorithm(message_client, txn_color):
+def snowflake_algorithm(message_client, txn_color):
     current_color = txn_color
+    query_count = 0
     other_color = the_other_color(current_color)
     logger.debug(f'Transaction color is {COLOR_MAP[current_color]}')
 
@@ -37,7 +39,7 @@ def slush_algorithm(message_client, txn_color):
         messages_pb2.BLUE_COLOR: 0,
     }
 
-    for step in range(QUERY_ROUNDS):
+    while query_count < BETA_PARAM:
         query_nodes = []
         if len(message_client.peers) < NETWORK_SAMPLE_SIZE:
             query_nodes = list(message_client.peers)
@@ -64,9 +66,14 @@ def slush_algorithm(message_client, txn_color):
                 raise ValueError(f'Invalid color {query_msg.color}')
 
         if color_responses[other_color] > flip_threshold:
+            query_count = 0
             logger.info(
-                f'Flipped to color {COLOR_MAP[other_color]} at step {step}')
+                f'Flipped to color {COLOR_MAP[other_color]}')
             current_color = other_color
+        elif color_responses[current_color] > flip_threshold:
+            query_count += 1
+            logger.info(
+                f'Remained current color {COLOR_MAP[current_color]}')
 
     logger.info(f'Concluded with color {COLOR_MAP[current_color]}')
     message_client.color = current_color
