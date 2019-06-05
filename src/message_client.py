@@ -1,6 +1,7 @@
 import socket
 import time
 import logging
+from threading import RLock
 from proto import messages_pb2
 from common import exponential_backoff
 
@@ -20,6 +21,7 @@ class MessageClient:
         self.consensus_algorithm = consensus_algorithm
         self.logger = logging.getLogger('main')
         self.is_light_client = light_client
+        self.lock = RLock()
 
     @staticmethod
     def get_sub_message(message_type, message):

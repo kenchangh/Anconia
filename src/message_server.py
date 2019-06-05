@@ -98,14 +98,16 @@ class MessageServer:
 
     def handle_transaction(self, txn_msg):
         self.logger.info('Received transaction')
-        self.message_client.run_consensus(txn_msg.color)
+        with self.message_client.lock:
+            self.message_client.run_consensus(txn_msg.color)
 
     def handle_node_query(self, query_msg):
         response_color = None
         if self.message_client.color == messages_pb2.NONE_COLOR:
             response_color = query_msg.color
-            self.message_client.color = response_color
-            self.message_client.run_consensus(response_color)
+            with self.message_client.lock:
+                self.message_client.color = response_color
+                self.message_client.run_consensus(response_color)
         else:
             response_color = self.message_client.color
         response_query = messages_pb2.NodeQuery()
@@ -116,4 +118,5 @@ class MessageServer:
 
     def add_peer(self, join_msg):
         new_peer = (join_msg.address, join_msg.port)
-        self.message_client.add_peer(new_peer)
+        with self.message_client.lock:
+            self.message_client.add_peer(new_peer)

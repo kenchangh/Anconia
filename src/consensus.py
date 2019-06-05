@@ -1,5 +1,6 @@
 import random
 import math
+import time
 import logging
 from proto import messages_pb2
 from message_client import MessageClient
@@ -89,6 +90,8 @@ def snowball_algorithm(message_client, txn_color):
         else:
             logger.info(
                 f'Remained with current color {COLOR_MAP[current_color]}')
+
+        time.sleep(1)
 
     logger.info(f'Concluded with color {COLOR_MAP[current_color]}')
     message_client.color = current_color
