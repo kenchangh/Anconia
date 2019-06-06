@@ -1,3 +1,4 @@
+import sys
 import socket
 import struct
 import binascii
@@ -38,11 +39,12 @@ class MessageServer:
         return address, port
 
     def start(self):
-        address, port = self.bind_to_open_port()
-        self.listen_to_messages(self.sock)
-        # self.listener_thread = Thread(
-        #     target=self.listen_to_messages, args=(self.sock,))
-        # self.listener_thread.start()
+        try:
+            address, port = self.bind_to_open_port()
+            self.listen_to_messages(self.sock)
+        except (KeyboardInterrupt, SystemExit):
+            self.thread_executor.shutdown(wait=False)
+            sys.exit()
         return address, port
 
     def start_connection_thread(self, conn):

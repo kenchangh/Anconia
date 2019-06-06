@@ -18,11 +18,5 @@ def _create_random_transactions(message_client):
 
 def create_random_transactions(message_client):
     thread = Thread(target=_create_random_transactions, args=(message_client,))
+    thread.setDaemon(True)
     thread.start()
-
-
-if __name__ == '__main__':
-    addr = sys.argv[1]
-    port = int(sys.argv[2])
-    color = sys.argv[3]
-    create_transaction(addr, port, color)
