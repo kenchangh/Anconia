@@ -11,11 +11,10 @@ from proto import messages_pb2
 
 
 class DiscoveryServer:
-    def __init__(self, message_client, host, port, pubkey, nickname=''):
+    def __init__(self, message_client, host, port, nickname=''):
         self.logger = logging.getLogger('main')
         self.host = host
         self.port = port
-        self.pubkey = pubkey
         self.nickname = nickname
         self.message_client = message_client
         self.thread_executor = ThreadPoolExecutor(max_workers=8)
@@ -31,7 +30,7 @@ class DiscoveryServer:
         join_msg = messages_pb2.Join()
         join_msg.address = self.host
         join_msg.port = self.port
-        join_msg.pubkey = self.pubkey
+        join_msg.pubkey = self.message_client.keypair.pubkey.to_string().hex()
         join_msg.nickname = self.nickname
 
         if ack:

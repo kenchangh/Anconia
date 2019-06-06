@@ -7,21 +7,11 @@ from consensus import snowball_algorithm
 from common import COLOR_MAP, INVERSE_COLOR_MAP
 
 
-def create_transaction(addr, port, color_str, amount=100):
-    color_int = INVERSE_COLOR_MAP.get(color_str)
-    if not color_int:
-        return ValueError(f'No such color "{color_str}"')
-
-    client = MessageClient(
-        consensus_algorithm=snowball_algorithm, light_client=True)
-    msg = client.generate_transaction(color_int, amount)
-    client.send_message((addr, port), msg)
-
-
 def _create_random_transactions(message_client):
     while True:
-        color = random.choice(list(COLOR_MAP.keys()))
-        msg = message_client.generate_transaction(color, 100)
+        recipient_addr = random.choice(
+            message_client.state.get_all_addresses())
+        msg = message_client.generate_transaction(recipient_addr, 100)
         message_client.broadcast_message(msg)
         time.sleep(5)
 

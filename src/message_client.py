@@ -19,7 +19,7 @@ ATTR_NAMES = {
 class MessageClient:
     def __init__(self, consensus_algorithm, light_client=False):
         self.keypair = Keypair()
-        self.statedb = StateDB()
+        self.state = StateDB()
         self.peers = set([])
 
         self.consensus_algorithm = consensus_algorithm
@@ -105,10 +105,12 @@ class MessageClient:
         return responses
 
     def generate_transaction(self, recipient, amount):
+        nonce, _ = self.state.send_transaction(recipient, amount)
         txn_msg = messages_pb2.Transaction()
         txn_msg.sender = self.keypair.address
         txn_msg.recipient = recipient
         txn_msg.amount = amount
+        txn_msg.nonce = nonce
         txn_msg.data = ''
         msg = MessageClient.create_message(
             messages_pb2.TRANSACTION_MESSAGE, txn_msg)

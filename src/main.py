@@ -26,7 +26,7 @@ class Anconia:
         message_server = MessageServer(message_client, host=host, port=port)
 
         discovery_server = DiscoveryServer(
-            message_client, host, port, pubkey, nickname)
+            message_client, host, port, nickname)
         discovery_server.start()
 
         create_random_transactions(message_client)

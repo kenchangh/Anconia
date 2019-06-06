@@ -1,11 +1,23 @@
 from threading import RLock
+from utils import read_genesis_state
 
 
 class StateDB:
-    def __init__(self, initial_state):
+    def __init__(self):
         self.balances = {}
         self.nonces = {}
         self.lock = RLock()
+        self.load_init_state()
+
+    def load_init_state(self):
+        init_state = read_genesis_state()
+        for account in init_state:
+            address = account['address']
+            self.balances[address] = account['balance']
+            self.nonces[address] = account['nonce']
+
+    def get_all_addresses(self):
+        return list(self.balances.keys())
 
     def send_transaction(self, address, amount):
         updated_nonce = None
