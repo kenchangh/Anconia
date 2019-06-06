@@ -1,3 +1,4 @@
+import sys
 import time
 import socket
 import binascii
@@ -11,11 +12,10 @@ from proto import messages_pb2
 
 
 class DiscoveryServer:
-    def __init__(self, message_client, host, port, pubkey, nickname=''):
+    def __init__(self, message_client, host, port, nickname=''):
         self.logger = logging.getLogger('main')
         self.host = host
         self.port = port
-        self.pubkey = pubkey
         self.nickname = nickname
         self.message_client = message_client
         self.thread_executor = ThreadPoolExecutor(max_workers=8)
@@ -23,15 +23,16 @@ class DiscoveryServer:
     def start(self):
         listener_thread = Thread(target=self.listen_multicast)
         listener_thread.start()
+        JOIN_DELAY = 5  # seconds
         joiner_thread = Thread(
-            target=self.delayed_multicast_join, args=(5, self.host, self.port))
+            target=self.delayed_multicast_join, args=(JOIN_DELAY, self.host, self.port))
         joiner_thread.start()
 
     def create_join_message(self, ack=False):
         join_msg = messages_pb2.Join()
         join_msg.address = self.host
         join_msg.port = self.port
-        join_msg.pubkey = self.pubkey
+        join_msg.pubkey = self.message_client.keypair.pubkey.to_string().hex()
         join_msg.nickname = self.nickname
 
         if ack:
@@ -75,8 +76,13 @@ class DiscoveryServer:
                         socket.inet_aton(MCAST_GRP) + socket.inet_aton(host))
 
         while True:
-            data, _ = sock.recvfrom(1024)
-            self.thread_executor.submit(self.handle_multicast_message, data)
+            try:
+                data, _ = sock.recvfrom(1024)
+                self.thread_executor.submit(
+                    self.handle_multicast_message, data)
+            except (KeyboardInterrupt, SystemExit):
+                self.thread_executor.shutdown(wait=False)
+                sys.exit()
 
     def handle_multicast_message(self, data):
         try:

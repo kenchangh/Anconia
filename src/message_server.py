@@ -1,3 +1,4 @@
+import sys
 import socket
 import struct
 import binascii
@@ -38,11 +39,12 @@ class MessageServer:
         return address, port
 
     def start(self):
-        address, port = self.bind_to_open_port()
-        self.listen_to_messages(self.sock)
-        # self.listener_thread = Thread(
-        #     target=self.listen_to_messages, args=(self.sock,))
-        # self.listener_thread.start()
+        try:
+            address, port = self.bind_to_open_port()
+            self.listen_to_messages(self.sock)
+        except (KeyboardInterrupt, SystemExit):
+            self.thread_executor.shutdown(wait=False)
+            sys.exit()
         return address, port
 
     def start_connection_thread(self, conn):
@@ -59,7 +61,7 @@ class MessageServer:
                     #     (response,), timeout=0.01, max_retry=5)
                     conn.sendall(response)
             conn.close()
-        except socket.error as e:
+        except socket.error:
             # self.logger.error(e)
             # traceback.print_exc()
             pass
@@ -98,7 +100,7 @@ class MessageServer:
 
     def handle_transaction(self, txn_msg):
         self.logger.info('Received transaction')
-        self.message_client.run_consensus(txn_msg.color)
+        # self.message_client.run_consensus(txn_msg.color)
 
     def handle_node_query(self, query_msg):
         response_color = None
@@ -106,7 +108,7 @@ class MessageServer:
             response_color = query_msg.color
             with self.message_client.lock:
                 self.message_client.color = response_color
-            self.message_client.run_consensus(response_color)
+            # self.message_client.run_consensus(response_color)
         else:
             response_color = self.message_client.color
         response_query = messages_pb2.NodeQuery()
