@@ -28,10 +28,11 @@ message NodeQuery {
 }
 
 message Transaction {
-  required string address = 1;
-  required uint64 nonce = 2;
-  required uint64 amount = 3;
-  required string data = 4;
+  required string sender = 1;
+  required string recipient = 2;
+  required uint64 nonce = 3;
+  required uint64 amount = 4;
+  required string data = 5;
 }
 
 message Join {
