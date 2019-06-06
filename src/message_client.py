@@ -4,6 +4,8 @@ import logging
 from threading import Lock
 from proto import messages_pb2
 from common import exponential_backoff
+from crypto import Keypair
+from statedb import StateDB
 
 
 # TO BE UPDATED PERIODICALLY
@@ -16,8 +18,10 @@ ATTR_NAMES = {
 
 class MessageClient:
     def __init__(self, consensus_algorithm, light_client=False):
+        self.keypair = Keypair()
+        self.statedb = StateDB()
         self.peers = set([])
-        self.color = messages_pb2.NONE_COLOR
+
         self.consensus_algorithm = consensus_algorithm
         self.logger = logging.getLogger('main')
         self.is_light_client = light_client
@@ -100,10 +104,12 @@ class MessageClient:
             self.logger.info('No peers, did not broadcast transaction')
         return responses
 
-    def generate_transaction(self, color, amount):
+    def generate_transaction(self, recipient, amount):
         txn_msg = messages_pb2.Transaction()
-        txn_msg.color = color
+        txn_msg.sender = self.keypair.address
+        txn_msg.recipient = recipient
         txn_msg.amount = amount
+        txn_msg.data = ''
         msg = MessageClient.create_message(
             messages_pb2.TRANSACTION_MESSAGE, txn_msg)
         return msg
