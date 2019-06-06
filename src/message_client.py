@@ -23,6 +23,12 @@ class MessageClient:
         self.is_light_client = light_client
         self.lock = Lock()
 
+        # transaction processing
+        self.chits = {}
+        self.transactions = {}
+        self.queried = {}
+        self.conflicts = {}
+
     @staticmethod
     def get_sub_message(message_type, message):
         attr_name = ATTR_NAMES.get(message_type)

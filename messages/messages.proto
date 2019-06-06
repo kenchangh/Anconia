@@ -28,8 +28,10 @@ message NodeQuery {
 }
 
 message Transaction {
-  required Color color = 1;
-  required uint64 amount = 2;
+  required string address = 1;
+  required uint64 nonce = 2;
+  required uint64 amount = 3;
+  required string data = 4;
 }
 
 message Join {
