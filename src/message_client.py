@@ -5,9 +5,10 @@ from hashlib import sha256
 from threading import Lock
 from proto import messages_pb2
 from common import exponential_backoff
+from utils import read_genesis_state
 from crypto import Keypair
 from statedb import StateDB
-
+from dag import DAG
 
 # TO BE UPDATED PERIODICALLY
 ATTR_NAMES = {
@@ -19,8 +20,9 @@ ATTR_NAMES = {
 
 class MessageClient:
     def __init__(self, consensus_algorithm, light_client=False):
-        self.keypair = Keypair()
         self.state = StateDB()
+        self.keypair = Keypair.from_genesis_file(read_genesis_state())
+        self.dag = DAG()
         self.peers = set([])
 
         self.consensus_algorithm = consensus_algorithm
@@ -112,7 +114,7 @@ class MessageClient:
         return sha256(message.encode('utf-8')).hexdigest()
 
     def generate_transaction(self, recipient, amount):
-        nonce, _ = self.state.send_transaction(recipient, amount)
+        nonce, _ = self.state.send_transaction(self.keypair.address, amount)
         txn_msg = messages_pb2.Transaction()
         txn_msg.sender = self.keypair.address
         txn_msg.recipient = recipient
