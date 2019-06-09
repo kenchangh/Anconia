@@ -33,10 +33,11 @@ message Transaction {
   required uint64 nonce = 3;
   required uint64 amount = 4;
   required string data = 5;
+  required string hash = 6;
 
-  optional string parent = 6;
-  repeated string ancestors = 7;
-  optional string signature = 8;
+  optional string parent = 7;
+  repeated string ancestors = 8;
+  optional string signature = 9;
 }
 
 message Join {

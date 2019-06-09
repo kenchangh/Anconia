@@ -1,6 +1,7 @@
 import socket
 import time
 import logging
+from hashlib import sha256
 from threading import Lock
 from proto import messages_pb2
 from common import exponential_backoff
@@ -26,12 +27,6 @@ class MessageClient:
         self.logger = logging.getLogger('main')
         self.is_light_client = light_client
         self.lock = Lock()
-
-        # transaction processing
-        self.chits = {}
-        self.transactions = {}
-        self.queried = {}
-        self.conflicts = {}
 
     @staticmethod
     def get_sub_message(message_type, message):
@@ -105,12 +100,16 @@ class MessageClient:
         return responses
 
     def sign_transaction(self, txn_msg):
+        txn_msg.signature = self.keypair.sign(
+            txn_msg.hash.encode('utf-8')).hex()
+        return txn_msg
+
+    def generate_transaction_hash(self, txn_msg):
         # Hash of:
         # sender + recipient + amount + nonce + data
         message = txn_msg.sender + txn_msg.recipient + \
             str(txn_msg.amount) + str(txn_msg.nonce) + txn_msg.data
-        txn_msg.signature = self.keypair.sign(message.encode('utf-8')).hex()
-        return txn_msg
+        return sha256(message.encode('utf-8')).hexdigest()
 
     def generate_transaction(self, recipient, amount):
         nonce, _ = self.state.send_transaction(recipient, amount)
@@ -120,6 +119,10 @@ class MessageClient:
         txn_msg.amount = amount
         txn_msg.nonce = nonce
         txn_msg.data = ''
+        txn_msg.hash = self.generate_transaction_hash(txn_msg)
+
+        txn_msg = self.sign_transaction(txn_msg)
+
         msg = MessageClient.create_message(
             messages_pb2.TRANSACTION_MESSAGE, txn_msg)
         return msg
