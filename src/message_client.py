@@ -104,6 +104,14 @@ class MessageClient:
             self.logger.info('No peers, did not broadcast transaction')
         return responses
 
+    def sign_transaction(self, txn_msg):
+        # Hash of:
+        # sender + recipient + amount + nonce + data
+        message = txn_msg.sender + txn_msg.recipient + \
+            str(txn_msg.amount) + str(txn_msg.nonce) + txn_msg.data
+        txn_msg.signature = self.keypair.sign(message.encode('utf-8')).hex()
+        return txn_msg
+
     def generate_transaction(self, recipient, amount):
         nonce, _ = self.state.send_transaction(recipient, amount)
         txn_msg = messages_pb2.Transaction()
