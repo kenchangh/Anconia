@@ -35,8 +35,8 @@ message Transaction {
   required string data = 5;
   required string hash = 6;
 
-  optional string parent = 7;
-  repeated string ancestors = 8;
+  repeated string parents = 7;
+  repeated string children = 8;
   optional string signature = 9;
 }
 
