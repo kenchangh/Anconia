@@ -7,4 +7,11 @@ def test_conflict_set():
     assert conflict_sets.get_conflict(conflicts[0]) == set([])
     updated_conflicts = conflict_sets.add_conflict(*conflicts)
     assert updated_conflicts == set(conflicts)
-    assert conflict_sets.get_conflict(conflicts[0]) == set(conflicts)
+    for tx in conflicts:
+        assert conflict_sets.get_conflict(tx) == set(conflicts)
+
+    new_conflicts = [1, 4]
+    updated_conflicts = conflict_sets.add_conflict(*new_conflicts)
+    for tx in new_conflicts:
+        assert conflict_sets.get_conflict(tx) == set(
+            conflicts).union(set(new_conflicts))

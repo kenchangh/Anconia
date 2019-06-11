@@ -16,7 +16,7 @@ class ConflictSet:
         conflict_index = None
         for txn_hash in txns:
             conflict_index = self.lookup.get(txn_hash)
-            if conflict_index:
+            if conflict_index is not None:
                 for txn_hash in txns:
                     self.lookup[txn_hash] = conflict_index
                     self.conflicts[conflict_index].add(txn_hash)
@@ -43,6 +43,7 @@ class DAG:
         self.chits = {}
         self.transactions = {}
         self.queried = {}
+        self.conflicts = ConflictSet()
         self.conflicts = {}
         self.lock = RLock()
 
