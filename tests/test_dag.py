@@ -1,11 +1,9 @@
-import sys
-sys.path.append('src')
-
-if True:
-    from consensus import consensus_algorithm
-    from crypto import Keypair
-    from message_client import MessageClient
-    from src.dag import ConflictSet, DAG
+import config
+import time
+from src.consensus import consensus_algorithm
+from src.crypto import Keypair
+from src.message_client import MessageClient
+from src.dag import ConflictSet, DAG
 
 
 def test_conflict_set():
@@ -24,7 +22,7 @@ def test_conflict_set():
             conflicts).union(set(new_conflicts))
 
 
-def test_dag():
+def test_dag_conflicts():
     dag = DAG()
     client = MessageClient(
         consensus_algorithm=consensus_algorithm, light_client=True)
@@ -46,3 +44,36 @@ def test_dag():
     txn_hashes = list(dag.transactions.keys())
     assert msg.hash in txn_hashes
     assert conflict_msg.hash in txn_hashes
+
+
+def confidence(n):
+    if n == 0:
+        return 0
+    else:
+        return n + confidence(n-1)
+
+
+def test_dag_confidence():
+    dag = DAG()
+    client = MessageClient(
+        consensus_algorithm=consensus_algorithm, light_client=True)
+    recipient = Keypair()
+    entries = 5
+    for _ in range(entries):
+        msg = client.generate_txn_object(recipient.address, 100)
+        dag.receive_transaction(msg)
+
+    for txn_hash in dag.transactions:
+        txn = dag.transactions[txn_hash]
+        assert dag.confidence(txn) == confidence(len(txn.children))
+
+
+def test_dag_parent_selection():
+    dag = DAG()
+    client = MessageClient(
+        consensus_algorithm=consensus_algorithm, light_client=True)
+    recipient = Keypair()
+    entries = 10
+    for _ in range(entries):
+        msg = client.generate_txn_object(recipient.address, 100)
+        dag.receive_transaction(msg)

@@ -1,5 +1,6 @@
 from threading import RLock, Lock
 import json
+import time
 from google.protobuf.json_format import MessageToDict
 
 
@@ -80,7 +81,10 @@ class DAG:
         # search from the frontier, towards the genesis vertex
         eligible_parents = []
 
-        for txn_hash in self.transactions:
+        for txn_hash in reversed(tuple(self.transactions.keys())):
+            # early termination
+            if len(eligible_parents) >= 30:
+                break
             txn = self.transactions[txn_hash]
             if self.is_strongly_preferred(txn):
                 with self.conflicts.lock:
@@ -92,11 +96,28 @@ class DAG:
         return eligible_parents
 
     def confidence(self, txn):
+        visited = {}
+        queue = []
+        confidence = 0
+        queue.append(txn.hash)
+        visited[txn.hash] = True
+
+        while queue:
+            txn_hash = queue.pop(0)
+            children = self.transactions[txn_hash].children
+            confidence += len(children)
+            for child in children:
+                if not visited.get(child):
+                    queue.append(child)
+                    visited[child] = True
+        return confidence
+
+    def recursive_confidence(self, txn):
         if len(txn.children) == 0:
             return 0
         else:
             num_child = len(txn.children)
-            confidences = [self.confidence(
+            confidences = [self.recursive_confidence(
                 self.transactions[child]) for child in txn.children]
             confidence = num_child + sum(confidences)
             return confidence
