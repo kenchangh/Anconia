@@ -1,6 +1,6 @@
 import random
 from hashlib import sha256
-from ecdsa import SigningKey, NIST192p
+from ecdsa import SigningKey, VerifyingKey, NIST192p
 
 
 class Keypair:
@@ -32,5 +32,9 @@ class Keypair:
         signature = self.privkey.sign(message)
         return signature
 
-    def verify(self, signature, message):
-        return self.pubkey.verify(signature, message)
+    @staticmethod
+    def verify(pubkey, signature, message):
+        pubkey = bytes.fromhex(pubkey)
+        pubkey = VerifyingKey.from_string(pubkey, curve=NIST192p)
+        signature = bytes.fromhex(signature)
+        return pubkey.verify(signature, message.encode('utf-8'))

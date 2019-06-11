@@ -106,6 +106,10 @@ class MessageClient:
             txn_msg.hash.encode('utf-8')).hex()
         return txn_msg
 
+    def verify_transaction(self, txn_msg):
+        txn_hash = self.generate_transaction_hash(txn_msg)
+        return Keypair.verify(txn_msg.sender_pubkey, txn_msg.signature, txn_hash)
+
     def generate_transaction_hash(self, txn_msg):
         # Hash of:
         # sender + recipient + amount + nonce + data
@@ -113,7 +117,7 @@ class MessageClient:
             str(txn_msg.amount) + str(txn_msg.nonce) + txn_msg.data
         return sha256(message.encode('utf-8')).hexdigest()
 
-    def generate_transaction(self, recipient, amount):
+    def generate_txn_object(self, recipient, amount):
         nonce, _ = self.state.send_transaction(self.keypair.address, amount)
         txn_msg = messages_pb2.Transaction()
         txn_msg.sender = self.keypair.address
@@ -122,9 +126,22 @@ class MessageClient:
         txn_msg.nonce = nonce
         txn_msg.data = ''
         txn_msg.hash = self.generate_transaction_hash(txn_msg)
-
+        txn_msg.sender_pubkey = self.keypair.pubkey.to_string().hex()
         txn_msg = self.sign_transaction(txn_msg)
+        return txn_msg
 
+    def generate_conflicting_txn(self, original_txn_msg, recipient, amount):
+        # recompute the transaction hash and signature for conflicting
+        txn_msg = messages_pb2.Transaction()
+        txn_msg.CopyFrom(original_txn_msg)
+        txn_msg.recipient = recipient
+        txn_msg.amount = amount
+        txn_msg.hash = self.generate_transaction_hash(txn_msg)
+        txn_msg = self.sign_transaction(txn_msg)
+        return txn_msg
+
+    def generate_transaction(self, recipient, amount):
+        txn_msg = self.generate_transaction_object(recipient, amount)
         msg = MessageClient.create_message(
             messages_pb2.TRANSACTION_MESSAGE, txn_msg)
         return msg

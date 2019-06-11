@@ -1,4 +1,11 @@
-from src.dag import ConflictSet
+import sys
+sys.path.append('src')
+
+if True:
+    from consensus import consensus_algorithm
+    from crypto import Keypair
+    from message_client import MessageClient
+    from src.dag import ConflictSet, DAG
 
 
 def test_conflict_set():
@@ -15,3 +22,27 @@ def test_conflict_set():
     for tx in new_conflicts:
         assert conflict_sets.get_conflict(tx) == set(
             conflicts).union(set(new_conflicts))
+
+
+def test_dag():
+    dag = DAG()
+    client = MessageClient(
+        consensus_algorithm=consensus_algorithm, light_client=True)
+    recipient = Keypair()
+    attacker = Keypair()
+
+    msg = client.generate_txn_object(recipient.address, 100)
+    assert client.verify_transaction(msg)
+
+    dag.receive_transaction(msg)
+    conflict_msg = client.generate_conflicting_txn(msg, attacker.address, 100)
+    dag.receive_transaction(conflict_msg)
+
+    conflict_set = set([msg.hash, conflict_msg.hash])
+    assert len(dag.conflicts.conflicts) == 1
+    assert dag.conflicts.conflicts[0] == conflict_set
+    assert len(dag.transactions) == 2
+
+    txn_hashes = list(dag.transactions.keys())
+    assert msg.hash in txn_hashes
+    assert conflict_msg.hash in txn_hashes

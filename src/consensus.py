@@ -97,3 +97,6 @@ def snowball_algorithm(message_client, txn_color):
     with message_client.lock:
         message_client.color = current_color
     return current_color
+
+
+consensus_algorithm = snowball_algorithm

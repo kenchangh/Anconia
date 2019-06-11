@@ -37,7 +37,9 @@ message Transaction {
 
   repeated string parents = 7;
   repeated string children = 8;
+
   optional string signature = 9;
+  required string sender_pubkey = 10;
 }
 
 message Join {

@@ -14,6 +14,7 @@ def _create_random_transactions(message_client):
         msg = message_client.generate_transaction(recipient_addr, 100)
         message_client.broadcast_message(msg)
         time.sleep(5)
+        message_client.broadcast_message(msg)
 
 
 def create_random_transactions(message_client):

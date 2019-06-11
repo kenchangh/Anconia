@@ -21,7 +21,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
   package='messages',
   syntax='proto2',
   serialized_options=None,
-  serialized_pb=_b('\n\x0emessages.proto\x12\x08messages\"\xc5\x01\n\rCommonMessage\x12+\n\x0cmessage_type\x18\x01 \x02(\x0e\x32\x15.messages.MessageType\x12\x1e\n\x04join\x18\x02 \x01(\x0b\x32\x0e.messages.JoinH\x00\x12,\n\x0btransaction\x18\x03 \x01(\x0b\x32\x15.messages.TransactionH\x00\x12)\n\nnode_query\x18\x04 \x01(\x0b\x32\x13.messages.NodeQueryH\x00\x42\x0e\n\x0cmessage_body\"+\n\tNodeQuery\x12\x1e\n\x05\x63olor\x18\x01 \x02(\x0e\x32\x0f.messages.Color\"\xa1\x01\n\x0bTransaction\x12\x0e\n\x06sender\x18\x01 \x02(\t\x12\x11\n\trecipient\x18\x02 \x02(\t\x12\r\n\x05nonce\x18\x03 \x02(\x04\x12\x0e\n\x06\x61mount\x18\x04 \x02(\x04\x12\x0c\n\x04\x64\x61ta\x18\x05 \x02(\t\x12\x0c\n\x04hash\x18\x06 \x02(\t\x12\x0f\n\x07parents\x18\x07 \x03(\t\x12\x10\n\x08\x63hildren\x18\x08 \x03(\t\x12\x11\n\tsignature\x18\t \x01(\t\"\x94\x01\n\x04Join\x12\x0f\n\x07\x61\x64\x64ress\x18\x01 \x02(\t\x12\x0c\n\x04port\x18\x02 \x02(\x05\x12\x0e\n\x06pubkey\x18\x03 \x02(\t\x12\x10\n\x08nickname\x18\x04 \x01(\t\x12&\n\tjoin_type\x18\x05 \x02(\x0e\x32\x13.messages.Join.Type\"#\n\x04Type\x12\r\n\tINIT_JOIN\x10\x00\x12\x0c\n\x08\x41\x43K_JOIN\x10\x01*P\n\x0bMessageType\x12\x10\n\x0cJOIN_MESSAGE\x10\x00\x12\x17\n\x13TRANSACTION_MESSAGE\x10\x01\x12\x16\n\x12NODE_QUERY_MESSAGE\x10\x02*6\n\x05\x43olor\x12\x0e\n\nNONE_COLOR\x10\x00\x12\r\n\tRED_COLOR\x10\x01\x12\x0e\n\nBLUE_COLOR\x10\x02')
+  serialized_pb=_b('\n\x0emessages.proto\x12\x08messages\"\xc5\x01\n\rCommonMessage\x12+\n\x0cmessage_type\x18\x01 \x02(\x0e\x32\x15.messages.MessageType\x12\x1e\n\x04join\x18\x02 \x01(\x0b\x32\x0e.messages.JoinH\x00\x12,\n\x0btransaction\x18\x03 \x01(\x0b\x32\x15.messages.TransactionH\x00\x12)\n\nnode_query\x18\x04 \x01(\x0b\x32\x13.messages.NodeQueryH\x00\x42\x0e\n\x0cmessage_body\"+\n\tNodeQuery\x12\x1e\n\x05\x63olor\x18\x01 \x02(\x0e\x32\x0f.messages.Color\"\xb8\x01\n\x0bTransaction\x12\x0e\n\x06sender\x18\x01 \x02(\t\x12\x11\n\trecipient\x18\x02 \x02(\t\x12\r\n\x05nonce\x18\x03 \x02(\x04\x12\x0e\n\x06\x61mount\x18\x04 \x02(\x04\x12\x0c\n\x04\x64\x61ta\x18\x05 \x02(\t\x12\x0c\n\x04hash\x18\x06 \x02(\t\x12\x0f\n\x07parents\x18\x07 \x03(\t\x12\x10\n\x08\x63hildren\x18\x08 \x03(\t\x12\x11\n\tsignature\x18\t \x01(\t\x12\x15\n\rsender_pubkey\x18\n \x02(\t\"\x94\x01\n\x04Join\x12\x0f\n\x07\x61\x64\x64ress\x18\x01 \x02(\t\x12\x0c\n\x04port\x18\x02 \x02(\x05\x12\x0e\n\x06pubkey\x18\x03 \x02(\t\x12\x10\n\x08nickname\x18\x04 \x01(\t\x12&\n\tjoin_type\x18\x05 \x02(\x0e\x32\x13.messages.Join.Type\"#\n\x04Type\x12\r\n\tINIT_JOIN\x10\x00\x12\x0c\n\x08\x41\x43K_JOIN\x10\x01*P\n\x0bMessageType\x12\x10\n\x0cJOIN_MESSAGE\x10\x00\x12\x17\n\x13TRANSACTION_MESSAGE\x10\x01\x12\x16\n\x12NODE_QUERY_MESSAGE\x10\x02*6\n\x05\x43olor\x12\x0e\n\nNONE_COLOR\x10\x00\x12\r\n\tRED_COLOR\x10\x01\x12\x0e\n\nBLUE_COLOR\x10\x02')
 )
 
 _MESSAGETYPE = _descriptor.EnumDescriptor(
@@ -45,8 +45,8 @@ _MESSAGETYPE = _descriptor.EnumDescriptor(
   ],
   containing_type=None,
   serialized_options=None,
-  serialized_start=588,
-  serialized_end=668,
+  serialized_start=611,
+  serialized_end=691,
 )
 _sym_db.RegisterEnumDescriptor(_MESSAGETYPE)
 
@@ -72,8 +72,8 @@ _COLOR = _descriptor.EnumDescriptor(
   ],
   containing_type=None,
   serialized_options=None,
-  serialized_start=670,
-  serialized_end=724,
+  serialized_start=693,
+  serialized_end=747,
 )
 _sym_db.RegisterEnumDescriptor(_COLOR)
 
@@ -103,8 +103,8 @@ _JOIN_TYPE = _descriptor.EnumDescriptor(
   ],
   containing_type=None,
   serialized_options=None,
-  serialized_start=551,
-  serialized_end=586,
+  serialized_start=574,
+  serialized_end=609,
 )
 _sym_db.RegisterEnumDescriptor(_JOIN_TYPE)
 
@@ -265,6 +265,13 @@ _TRANSACTION = _descriptor.Descriptor(
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='sender_pubkey', full_name='messages.Transaction.sender_pubkey', index=9,
+      number=10, type=9, cpp_type=9, label=2,
+      has_default_value=False, default_value=_b("").decode('utf-8'),
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
   ],
   extensions=[
   ],
@@ -278,7 +285,7 @@ _TRANSACTION = _descriptor.Descriptor(
   oneofs=[
   ],
   serialized_start=274,
-  serialized_end=435,
+  serialized_end=458,
 )
 
 
@@ -337,8 +344,8 @@ _JOIN = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=438,
-  serialized_end=586,
+  serialized_start=461,
+  serialized_end=609,
 )
 
 _COMMONMESSAGE.fields_by_name['message_type'].enum_type = _MESSAGETYPE

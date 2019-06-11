@@ -1,4 +1,4 @@
-from threading import RLock
+from threading import RLock, Lock
 import json
 from google.protobuf.json_format import MessageToDict
 
@@ -7,7 +7,7 @@ class ConflictSet:
     def __init__(self):
         self.lookup = {}
         self.conflicts = []
-        self.lock = RLock()
+        self.lock = Lock()
 
     def add_conflict(self, *txns):
         # conflicts are transitive,
@@ -44,25 +44,18 @@ class DAG:
         self.transactions = {}
         self.queried = {}
         self.conflicts = ConflictSet()
-        self.conflicts = {}
         self.lock = RLock()
 
     def check_for_conflict(self, incoming_txn):
-        conflict = False
+        conflict = set([])
         for txn_hash in self.transactions:
             txn = self.transactions[txn_hash]
             if txn.sender == incoming_txn.sender and txn.nonce == incoming_txn.nonce:
-                # the dict key-values are doubly linked
-                if self.conflicts.get(incoming_txn.hash):
-                    self.conflicts[incoming_txn.hash].append(txn.hash)
-                else:
-                    self.conflicts[incoming_txn.hash] = [txn.hash]
-
-                if self.conflicts.get(txn.hash):
-                    self.conflicts[txn.hash].append(incoming_txn.hash)
-                else:
-                    self.conflicts[txn.hash] = [incoming_txn.hash]
-                conflict = True
+                updated_conflict = set([])
+                with self.conflicts.lock:
+                    updated_conflict = self.conflicts.add_conflict(
+                        incoming_txn.hash, txn.hash)
+                return updated_conflict
         return conflict
 
     def receive_transaction(self, incoming_txn):
@@ -90,10 +83,11 @@ class DAG:
         for txn_hash in self.transactions:
             txn = self.transactions[txn_hash]
             if self.is_strongly_preferred(txn):
-                n_conflicts = len(self.conflicts.get(txn_hash, []))
-                confidence = self.confidence(txn)
-                if confidence > 0 or n_conflicts == 0:
-                    eligible_parents.append(txn_hash)
+                with self.conflicts.lock:
+                    n_conflicts = len(self.conflicts.get_conflict(txn_hash))
+                    confidence = self.confidence(txn)
+                    if confidence > 0 or n_conflicts == 0:
+                        eligible_parents.append(txn_hash)
 
         return eligible_parents
 
