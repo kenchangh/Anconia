@@ -66,14 +66,3 @@ def test_dag_confidence():
     for txn_hash in dag.transactions:
         txn = dag.transactions[txn_hash]
         assert dag.confidence(txn) == confidence(len(txn.children))
-
-
-def test_dag_parent_selection():
-    dag = DAG()
-    client = MessageClient(
-        consensus_algorithm=consensus_algorithm, light_client=True)
-    recipient = Keypair()
-    entries = 10
-    for _ in range(entries):
-        msg = client.generate_txn_object(recipient.address, 100)
-        dag.receive_transaction(msg)

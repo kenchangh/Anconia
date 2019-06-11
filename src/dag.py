@@ -8,6 +8,7 @@ class ConflictSet:
     def __init__(self):
         self.lookup = {}
         self.conflicts = []
+        self.preferred = {}
         self.lock = Lock()
 
     def add_conflict(self, *txns):
@@ -38,6 +39,10 @@ class ConflictSet:
             return set([])
         return self.conflicts[conflict_index]
 
+    def is_preferred(self, txn_hash):
+        conflict_index = self.lookup.get(txn_hash, None)
+        return self.preferred.get(conflict_index) == txn_hash
+
 
 class DAG:
     def __init__(self):
@@ -64,7 +69,8 @@ class DAG:
             if not self.transactions.get(incoming_txn.hash):
                 self.check_for_conflict(incoming_txn)
                 parents = self.select_parents(incoming_txn)
-                incoming_txn.parents.extend(parents)
+                # incoming_txn.parents.extend(parents)
+                print(parents)
                 for parent in parents:
                     self.transactions[parent].children.append(
                         incoming_txn.hash)
@@ -86,12 +92,12 @@ class DAG:
             if len(eligible_parents) >= 30:
                 break
             txn = self.transactions[txn_hash]
-            if self.is_strongly_preferred(txn):
-                with self.conflicts.lock:
-                    n_conflicts = len(self.conflicts.get_conflict(txn_hash))
-                    confidence = self.confidence(txn)
-                    if confidence > 0 or n_conflicts == 0:
-                        eligible_parents.append(txn_hash)
+            # if self.is_strongly_preferred(txn):
+            with self.conflicts.lock:
+                n_conflicts = len(self.conflicts.get_conflict(txn_hash))
+                confidence = self.confidence(txn)
+                if confidence > 0 or n_conflicts == 0:
+                    eligible_parents.append(txn_hash)
 
         return eligible_parents
 
@@ -112,15 +118,19 @@ class DAG:
                     visited[child] = True
         return confidence
 
-    def recursive_confidence(self, txn):
-        if len(txn.children) == 0:
-            return 0
-        else:
-            num_child = len(txn.children)
-            confidences = [self.recursive_confidence(
-                self.transactions[child]) for child in txn.children]
-            confidence = num_child + sum(confidences)
-            return confidence
-
     def is_strongly_preferred(self, txn):
-        return 1
+        visited = {}
+        queue = []
+        queue.append(txn.hash)
+        visited[txn.hash] = True
+
+        while queue:
+            txn_hash = queue.pop(0)
+            if not self.conflicts.is_preferred(txn_hash):
+                return False
+            children = self.transactions[txn_hash].children
+            for child in children:
+                if not visited.get(child):
+                    queue.append(child)
+                    visited[child] = True
+        return True
