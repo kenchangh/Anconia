@@ -141,7 +141,7 @@ class MessageClient:
         return txn_msg
 
     def generate_transaction(self, recipient, amount):
-        txn_msg = self.generate_transaction_object(recipient, amount)
+        txn_msg = self.generate_txn_object(recipient, amount)
         msg = MessageClient.create_message(
             messages_pb2.TRANSACTION_MESSAGE, txn_msg)
         return msg

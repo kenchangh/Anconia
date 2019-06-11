@@ -95,13 +95,19 @@ class MessageServer:
             sub_msg = getattr(messages_pb2, message_classname)()
             sub_msg.CopyFrom(getattr(common_msg, attr_name))
             return handler_function(sub_msg)
-        except Exception as e:
+        except Exception:
             traceback.print_exc()
 
     def handle_transaction(self, txn_msg):
         self.logger.info('Received transaction')
-        self.message_client.dag.receive_transaction(txn_msg)
-        # self.message_client.run_consensus(txn_msg.color)
+        legit_txn = self.message_client.verify_transaction(txn_msg)
+        print('Verified', legit_txn)
+
+        if not legit_txn:
+            self.logger.error(
+                'Illegal transaction, wrong signature '+str(txn_msg))
+        else:
+            self.message_client.dag.receive_transaction(txn_msg)
 
     def handle_node_query(self, query_msg):
         response_color = None
