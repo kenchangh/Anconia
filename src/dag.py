@@ -1,4 +1,41 @@
 from threading import RLock
+import json
+from google.protobuf.json_format import MessageToDict
+
+
+class ConflictSet:
+    def __init__(self):
+        self.lookup = {}
+        self.conflicts = []
+        self.lock = RLock()
+
+    def add_conflict(self, *txns):
+        # conflicts are transitive,
+        # so when a txn_hash already exists in the conflict lookup table
+        # just add the other conflicting transactions into the conflict set
+        conflict_index = None
+        for txn_hash in txns:
+            conflict_index = self.lookup.get(txn_hash)
+            if conflict_index:
+                for txn_hash in txns:
+                    self.lookup[txn_hash] = conflict_index
+                    self.conflicts[conflict_index].add(txn_hash)
+                return self.conflicts[conflict_index]
+
+        if not conflict_index:
+            conflict_set = set(txns)
+            self.conflicts.append(conflict_set)
+            conflict_index = len(self.conflicts) - 1
+
+            for txn_hash in txns:
+                self.lookup[txn_hash] = conflict_index
+            return conflict_set
+
+    def get_conflict(self, txn_hash):
+        conflict_index = self.lookup.get(txn_hash, None)
+        if conflict_index is None:
+            return set([])
+        return self.conflicts[conflict_index]
 
 
 class DAG:
@@ -28,13 +65,19 @@ class DAG:
         return conflict
 
     def receive_transaction(self, incoming_txn):
-        if not self.transactions.get(incoming_txn.hash):
-            with self.lock:
+        with self.lock:
+            if not self.transactions.get(incoming_txn.hash):
                 self.check_for_conflict(incoming_txn)
-                self.select_parent(incoming_txn)
-                self.transactions[incoming_txn.hash] = incoming_txn
+                parents = self.select_parents(incoming_txn)
+                incoming_txn.parents.extend(parents)
+                for parent in parents:
+                    self.transactions[parent].children.append(
+                        incoming_txn.hash)
 
-    def select_parent(self, incoming_txn):
+                self.transactions[incoming_txn.hash] = incoming_txn
+                self.chits[incoming_txn.hash] = 0
+
+    def select_parents(self, incoming_txn):
         # to select a parent, we select a transaction
         # which itself and its progeny do not have conflicts
         # and with the highest confidence
@@ -48,20 +91,18 @@ class DAG:
             if self.is_strongly_preferred(txn):
                 n_conflicts = len(self.conflicts.get(txn_hash, []))
                 confidence = self.confidence(txn)
-                print('Confidence', confidence)
-                if confidence > 0 and n_conflicts == 0:
+                if confidence > 0 or n_conflicts == 0:
                     eligible_parents.append(txn_hash)
 
-        # for txn_hash in eligible_parents:
-        #     parent_txn = self.transactions[txn_hash]
+        return eligible_parents
 
     def confidence(self, txn):
         if len(txn.children) == 0:
             return 0
         else:
-            num_child = len(txn.child)
+            num_child = len(txn.children)
             confidences = [self.confidence(
-                self.transactions[child]) for child in txn.child]
+                self.transactions[child]) for child in txn.children]
             confidence = num_child + sum(confidences)
             return confidence
 
