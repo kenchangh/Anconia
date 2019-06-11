@@ -33,6 +33,13 @@ message Transaction {
   required uint64 nonce = 3;
   required uint64 amount = 4;
   required string data = 5;
+  required string hash = 6;
+
+  repeated string parents = 7;
+  repeated string children = 8;
+
+  optional string signature = 9;
+  required string sender_pubkey = 10;
 }
 
 message Join {

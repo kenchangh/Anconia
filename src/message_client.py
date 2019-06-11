@@ -1,12 +1,14 @@
 import socket
 import time
 import logging
+from hashlib import sha256
 from threading import Lock
 from proto import messages_pb2
 from common import exponential_backoff
+from utils import read_genesis_state
 from crypto import Keypair
 from statedb import StateDB
-
+from dag import DAG
 
 # TO BE UPDATED PERIODICALLY
 ATTR_NAMES = {
@@ -18,20 +20,15 @@ ATTR_NAMES = {
 
 class MessageClient:
     def __init__(self, consensus_algorithm, light_client=False):
-        self.keypair = Keypair()
         self.state = StateDB()
+        self.keypair = Keypair.from_genesis_file(read_genesis_state())
+        self.dag = DAG()
         self.peers = set([])
 
         self.consensus_algorithm = consensus_algorithm
         self.logger = logging.getLogger('main')
         self.is_light_client = light_client
         self.lock = Lock()
-
-        # transaction processing
-        self.chits = {}
-        self.transactions = {}
-        self.queried = {}
-        self.conflicts = {}
 
     @staticmethod
     def get_sub_message(message_type, message):
@@ -104,14 +101,47 @@ class MessageClient:
             self.logger.info('No peers, did not broadcast transaction')
         return responses
 
-    def generate_transaction(self, recipient, amount):
-        nonce, _ = self.state.send_transaction(recipient, amount)
+    def sign_transaction(self, txn_msg):
+        txn_msg.signature = self.keypair.sign(
+            txn_msg.hash.encode('utf-8')).hex()
+        return txn_msg
+
+    def verify_transaction(self, txn_msg):
+        txn_hash = self.generate_transaction_hash(txn_msg)
+        return Keypair.verify(txn_msg.sender_pubkey, txn_msg.signature, txn_hash)
+
+    def generate_transaction_hash(self, txn_msg):
+        # Hash of:
+        # sender + recipient + amount + nonce + data
+        message = txn_msg.sender + txn_msg.recipient + \
+            str(txn_msg.amount) + str(txn_msg.nonce) + txn_msg.data
+        return sha256(message.encode('utf-8')).hexdigest()
+
+    def generate_txn_object(self, recipient, amount):
+        nonce, _ = self.state.send_transaction(self.keypair.address, amount)
         txn_msg = messages_pb2.Transaction()
         txn_msg.sender = self.keypair.address
         txn_msg.recipient = recipient
         txn_msg.amount = amount
         txn_msg.nonce = nonce
         txn_msg.data = ''
+        txn_msg.hash = self.generate_transaction_hash(txn_msg)
+        txn_msg.sender_pubkey = self.keypair.pubkey.to_string().hex()
+        txn_msg = self.sign_transaction(txn_msg)
+        return txn_msg
+
+    def generate_conflicting_txn(self, original_txn_msg, recipient, amount):
+        # recompute the transaction hash and signature for conflicting
+        txn_msg = messages_pb2.Transaction()
+        txn_msg.CopyFrom(original_txn_msg)
+        txn_msg.recipient = recipient
+        txn_msg.amount = amount
+        txn_msg.hash = self.generate_transaction_hash(txn_msg)
+        txn_msg = self.sign_transaction(txn_msg)
+        return txn_msg
+
+    def generate_transaction(self, recipient, amount):
+        txn_msg = self.generate_txn_object(recipient, amount)
         msg = MessageClient.create_message(
             messages_pb2.TRANSACTION_MESSAGE, txn_msg)
         return msg

@@ -19,14 +19,14 @@ class StateDB:
     def get_all_addresses(self):
         return list(self.balances.keys())
 
-    def send_transaction(self, address, amount):
+    def send_transaction(self, sender, amount):
         updated_nonce = None
         updated_balance = None
         with self.lock:
-            self.nonces[address] += 1
-            self.balances[address] -= amount
-            updated_nonce = self.nonces[address]
-            updated_balance = self.balances[address]
+            self.nonces[sender] += 1
+            self.balances[sender] -= amount
+            updated_nonce = self.nonces[sender]
+            updated_balance = self.balances[sender]
         return updated_nonce, updated_balance
 
     def receive_transaction(self, address, amount):
