@@ -9,39 +9,50 @@ class ConflictSet:
         self.lookup = {}
         self.conflicts = []
         self.preferred = {}
-        self.lock = Lock()
+        self.lock = RLock()
 
     def add_conflict(self, *txns):
         # conflicts are transitive,
         # so when a txn_hash already exists in the conflict lookup table
         # just add the other conflicting transactions into the conflict set
-        conflict_index = None
-        for txn_hash in txns:
-            conflict_index = self.lookup.get(txn_hash)
-            if conflict_index is not None:
+        with self.lock:
+            conflict_index = None
+            for txn_hash in txns:
+                conflict_index = self.lookup.get(txn_hash)
+                if conflict_index is not None:
+                    for txn_hash in txns:
+                        self.lookup[txn_hash] = conflict_index
+                        self.conflicts[conflict_index].add(txn_hash)
+                    return self.conflicts[conflict_index]
+
+            if not conflict_index:
+                conflict_set = set(txns)
+                self.conflicts.append(conflict_set)
+                conflict_index = len(self.conflicts) - 1
+
                 for txn_hash in txns:
                     self.lookup[txn_hash] = conflict_index
-                    self.conflicts[conflict_index].add(txn_hash)
-                return self.conflicts[conflict_index]
-
-        if not conflict_index:
-            conflict_set = set(txns)
-            self.conflicts.append(conflict_set)
-            conflict_index = len(self.conflicts) - 1
-
-            for txn_hash in txns:
-                self.lookup[txn_hash] = conflict_index
-            return conflict_set
+                return conflict_set
 
     def get_conflict(self, txn_hash):
-        conflict_index = self.lookup.get(txn_hash, None)
+        conflict_index = None
+        with self.lock:
+            conflict_index = self.lookup.get(txn_hash, None)
         if conflict_index is None:
             return set([])
         return self.conflicts[conflict_index]
 
+    def set_preferred(self, txn_hash):
+        with self.lock:
+            conflict_index = self.lookup.get(txn_hash, None)
+            if conflict_index is None:
+                raise ValueError(f"No conflict set for {txn_hash}")
+            self.preferred[conflict_index] = txn_hash
+
     def is_preferred(self, txn_hash):
-        conflict_index = self.lookup.get(txn_hash, None)
-        return self.preferred.get(conflict_index) == txn_hash
+        with self.lock:
+            conflict_index = self.lookup.get(txn_hash, None)
+            return self.preferred.get(conflict_index) == txn_hash
 
 
 class DAG:
@@ -61,9 +72,8 @@ class DAG:
             txn = self.transactions[txn_hash]
             if txn.sender == incoming_txn.sender and txn.nonce == incoming_txn.nonce:
                 updated_conflict = set([])
-                with self.conflicts.lock:
-                    updated_conflict = self.conflicts.add_conflict(
-                        incoming_txn.hash, txn.hash)
+                updated_conflict = self.conflicts.add_conflict(
+                    incoming_txn.hash, txn.hash)
                 return updated_conflict
         return conflict
 
@@ -95,11 +105,10 @@ class DAG:
                 break
             txn = self.transactions[txn_hash]
             # if self.is_strongly_preferred(txn):
-            with self.conflicts.lock:
-                n_conflicts = len(self.conflicts.get_conflict(txn_hash))
-                confidence = self.confidence(txn)
-                if confidence > 0 or n_conflicts == 0:
-                    eligible_parents.append(txn_hash)
+            n_conflicts = len(self.conflicts.get_conflict(txn_hash))
+            confidence = self.confidence(txn)
+            if confidence > 0 or n_conflicts == 0:
+                eligible_parents.append(txn_hash)
 
         return eligible_parents
 
@@ -130,9 +139,9 @@ class DAG:
             txn_hash = queue.pop(0)
             if not self.conflicts.is_preferred(txn_hash):
                 return False
-            children = self.transactions[txn_hash].children
-            for child in children:
-                if not visited.get(child):
-                    queue.append(child)
-                    visited[child] = True
+            parents = self.transactions[txn_hash].parents
+            for parent in parents:
+                if not visited.get(parent):
+                    queue.append(parent)
+                    visited[parent] = True
         return True
