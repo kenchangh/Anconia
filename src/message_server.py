@@ -9,7 +9,7 @@ import socketserver
 import traceback
 from proto import messages_pb2
 from message_client import MessageClient
-from common import COLOR_MAP, exponential_backoff
+from common import exponential_backoff
 
 
 class MessageServer:
@@ -100,25 +100,35 @@ class MessageServer:
 
     def handle_transaction(self, txn_msg):
         self.logger.info('Received transaction')
-        legit_txn = self.message_client.verify_transaction(txn_msg)
-        print('Verified', legit_txn)
-
-        if not legit_txn:
+        valid_txn = self.message_client.verify_transaction(txn_msg)
+        if not valid_txn:
             self.logger.error(
-                'Illegal transaction, wrong signature '+str(txn_msg))
+                'Invalid transaction, signature is invalid for '+str(txn_msg))
         else:
-            self.message_client.dag.receive_transaction(txn_msg)
+            self.message_client.receive_transaction(txn_msg)
 
     def handle_node_query(self, query_msg):
-        response_color = None
-        if self.message_client.color == messages_pb2.NONE_COLOR:
-            response_color = query_msg.color
-            with self.message_client.lock:
-                self.message_client.color = response_color
-        else:
-            response_color = self.message_client.color
+        """
+        If we have not encountered the transaction yet,
+        Respond the query with the query's is_strongly_preferred field
+        And store the transaction into our own DAG.
+
+        If encountered before, respond with own preference.
+        """
+        txn_hash = query_msg.txn_hash
+        is_strongly_preferred = False
+
+        with self.message_client.lock:
+            if not self.message_client.dag.transactions.get(txn_hash):
+                is_strongly_preferred = query_msg.is_strongly_preferred
+            else:
+                txn = self.message_client.dag.transactions[txn_hash]
+                is_strongly_preferred = self.message_client.dag.is_strongly_preferred(
+                    txn)
+
         response_query = messages_pb2.NodeQuery()
-        response_query.color = response_color
+        response_query.txn_hash = txn_hash
+        response_query.is_strongly_preferred = is_strongly_preferred
         msg = MessageClient.create_message(
             messages_pb2.NODE_QUERY_MESSAGE, response_query)
         return msg

@@ -7,12 +7,6 @@ enum MessageType {
   NODE_QUERY_MESSAGE = 2;
 }
 
-enum Color {
-  NONE_COLOR = 0;
-  RED_COLOR = 1;
-  BLUE_COLOR = 2;
-}
-
 message CommonMessage {
   required MessageType message_type = 1;
 
@@ -24,7 +18,8 @@ message CommonMessage {
 }
 
 message NodeQuery {
-  required Color color = 1;
+  required string txn_hash = 1;
+  required bool is_strongly_preferred = 2;
 }
 
 message Transaction {

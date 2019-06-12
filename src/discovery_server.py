@@ -2,6 +2,7 @@ import sys
 import time
 import socket
 import binascii
+import params
 from threading import Thread
 import logging
 import traceback
@@ -23,9 +24,9 @@ class DiscoveryServer:
     def start(self):
         listener_thread = Thread(target=self.listen_multicast)
         listener_thread.start()
-        JOIN_DELAY = 5  # seconds
         joiner_thread = Thread(
-            target=self.delayed_multicast_join, args=(JOIN_DELAY, self.host, self.port))
+            target=self.delayed_multicast_join,
+            args=(params.DISCOVERY_STARTUP_DELAY, self.host, self.port))
         joiner_thread.start()
 
     def create_join_message(self, ack=False):

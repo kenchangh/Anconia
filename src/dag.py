@@ -138,7 +138,8 @@ class DAG:
 
         while queue:
             txn_hash = queue.pop(0)
-            if not self.conflicts.is_preferred(txn_hash):
+            conflict_set = self.conflicts.get_conflict(txn_hash)
+            if conflict_set and not self.conflicts.is_preferred(txn_hash):
                 return False
             parents = self.transactions[txn_hash].parents
             for parent in parents:

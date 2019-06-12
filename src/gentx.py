@@ -1,9 +1,9 @@
 import sys
 import time
 import random
+import params
 from message_client import MessageClient
 from threading import Thread
-from common import COLOR_MAP, INVERSE_COLOR_MAP
 
 
 def _create_random_transactions(message_client):
@@ -12,7 +12,7 @@ def _create_random_transactions(message_client):
             message_client.state.get_all_addresses())
         msg = message_client.generate_transaction(recipient_addr, 100)
         message_client.broadcast_message(msg)
-        time.sleep(5)
+        time.sleep(params.RANDOM_TX_GENERATION)
         message_client.broadcast_message(msg)
 
 
