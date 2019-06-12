@@ -1,7 +1,6 @@
 import config
 import time
 import pytest
-from src.consensus import consensus_algorithm
 from src.crypto import Keypair
 from src.message_client import MessageClient
 from src.dag import ConflictSet, DAG
@@ -25,8 +24,7 @@ def test_conflict_set():
 
 def test_dag_conflicts():
     dag = DAG()
-    client = MessageClient(
-        consensus_algorithm=consensus_algorithm, light_client=True)
+    client = MessageClient(light_client=True)
     recipient = Keypair()
     attacker = Keypair()
     entries = 5
@@ -69,8 +67,7 @@ def confidence(n):
 
 def test_dag_confidence():
     dag = DAG()
-    client = MessageClient(
-        consensus_algorithm=consensus_algorithm, light_client=True)
+    client = MessageClient(light_client=True)
     recipient = Keypair()
     entries = 5
     for _ in range(entries):
@@ -85,8 +82,7 @@ def test_dag_confidence():
 
 def test_dag_strongly_preferred():
     dag = DAG()
-    client = MessageClient(
-        consensus_algorithm=consensus_algorithm, light_client=True)
+    client = MessageClient(light_client=True)
     recipient = Keypair()
     attacker = Keypair()
     entries = 5

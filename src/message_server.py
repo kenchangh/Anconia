@@ -115,7 +115,6 @@ class MessageServer:
             response_color = query_msg.color
             with self.message_client.lock:
                 self.message_client.color = response_color
-            # self.message_client.run_consensus(response_color)
         else:
             response_color = self.message_client.color
         response_query = messages_pb2.NodeQuery()

@@ -8,7 +8,6 @@ from proto import messages_pb2
 from message_server import MessageServer
 from message_client import MessageClient
 from discovery_server import DiscoveryServer
-from consensus import snowball_algorithm
 from gentx import create_random_transactions
 
 logger = logging.getLogger('main')
@@ -22,7 +21,7 @@ logger.propagate = False
 
 class Anconia:
     def start(self, host='127.0.0.1', port=5000, pubkey='123', nickname='abc'):
-        message_client = MessageClient(consensus_algorithm=snowball_algorithm)
+        message_client = MessageClient()
         message_server = MessageServer(message_client, host=host, port=port)
 
         discovery_server = DiscoveryServer(

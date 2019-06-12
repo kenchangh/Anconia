@@ -3,7 +3,6 @@ import time
 import random
 from message_client import MessageClient
 from threading import Thread
-from consensus import snowball_algorithm
 from common import COLOR_MAP, INVERSE_COLOR_MAP
 
 

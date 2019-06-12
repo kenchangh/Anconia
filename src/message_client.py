@@ -19,13 +19,17 @@ ATTR_NAMES = {
 
 
 class MessageClient:
-    def __init__(self, consensus_algorithm, light_client=False):
+    def __init__(self, light_client=False):
+        """
+        Client that interacts with other peers in the network.
+
+        light_client=True, to disable peering and storing peer information.
+        """
         self.state = StateDB()
         self.keypair = Keypair.from_genesis_file(read_genesis_state())
         self.dag = DAG()
         self.peers = set([])
 
-        self.consensus_algorithm = consensus_algorithm
         self.logger = logging.getLogger('main')
         self.is_light_client = light_client
         self.lock = Lock()
@@ -56,8 +60,8 @@ class MessageClient:
         msg = common_msg.SerializeToString()
         return msg
 
-    def run_consensus(self, txn_msg):
-        self.consensus_algorithm(self, txn_msg)
+    def query_txn(self, txn_msg):
+        pass
 
     def add_peer(self, new_peer):
         addr, port = new_peer

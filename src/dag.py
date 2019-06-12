@@ -60,7 +60,6 @@ class ConflictSet:
 class DAG:
     def __init__(self):
         self.transactions = {}
-        self.queried = {}
         self.conflicts = ConflictSet()
         self.lock = RLock()
 
