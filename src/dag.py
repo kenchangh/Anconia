@@ -46,11 +46,14 @@ class ConflictSet:
 
 class DAG:
     def __init__(self):
-        self.chits = {}
         self.transactions = {}
         self.queried = {}
         self.conflicts = ConflictSet()
         self.lock = RLock()
+
+    def update_chit(self, txn_hash, chit):
+        with self.lock:
+            self.transactions[txn_hash].chit = chit
 
     def check_for_conflict(self, incoming_txn):
         conflict = set([])
@@ -69,14 +72,13 @@ class DAG:
             if not self.transactions.get(incoming_txn.hash):
                 self.check_for_conflict(incoming_txn)
                 parents = self.select_parents(incoming_txn)
-                # incoming_txn.parents.extend(parents)
-                print(parents)
+                incoming_txn.parents.extend(parents)
                 for parent in parents:
                     self.transactions[parent].children.append(
                         incoming_txn.hash)
 
+                incoming_txn.chit = False
                 self.transactions[incoming_txn.hash] = incoming_txn
-                self.chits[incoming_txn.hash] = 0
 
     def select_parents(self, incoming_txn):
         # to select a parent, we select a transaction
@@ -110,9 +112,9 @@ class DAG:
 
         while queue:
             txn_hash = queue.pop(0)
-            children = self.transactions[txn_hash].children
-            confidence += len(children)
-            for child in children:
+            txn = self.transactions[txn_hash]
+            for child in txn.children:
+                confidence += self.transactions[child].chit
                 if not visited.get(child):
                     queue.append(child)
                     visited[child] = True

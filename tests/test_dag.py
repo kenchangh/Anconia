@@ -62,6 +62,7 @@ def test_dag_confidence():
     for _ in range(entries):
         msg = client.generate_txn_object(recipient.address, 100)
         dag.receive_transaction(msg)
+        dag.update_chit(msg.hash, True)
 
     for txn_hash in dag.transactions:
         txn = dag.transactions[txn_hash]
