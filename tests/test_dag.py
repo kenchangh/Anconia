@@ -86,25 +86,29 @@ def test_dag_confidence():
         assert dag.confidence(txn) == confidence(len(txn.children))
 
 
-# def test_dag_strongly_preferred():
-#     dag = DAG()
-#     client = MessageClient(
-#         consensus_algorithm=consensus_algorithm, light_client=True)
-#     recipient = Keypair()
-#     attacker = Keypair()
-#     entries = 5
-#     messages = []
+def test_dag_strongly_preferred():
+    dag = DAG()
+    client = MessageClient(
+        consensus_algorithm=consensus_algorithm, light_client=True)
+    recipient = Keypair()
+    attacker = Keypair()
+    entries = 5
+    messages = []
+    conflicting_messages = []
 
-#     for _ in range(entries):
-#         msg = client.generate_txn_object(recipient.address, 100)
-#         dag.receive_transaction(msg)
-#         dag.update_chit(msg.hash, True)
-#         # dag.conflicts.set_preferred(msg.hash)
-#         messages.append(msg)
+    for _ in range(entries):
+        msg = client.generate_txn_object(recipient.address, 100)
+        dag.receive_transaction(msg)
+        messages.append(msg)
 
-#     for msg in messages:
-#         conflict_msg = client.generate_conflicting_txn(
-#             msg, attacker.address, 100)
-#         dag.receive_transaction(conflict_msg)
+    for msg in messages:
+        conflict_msg = client.generate_conflicting_txn(
+            msg, attacker.address, 100)
+        dag.receive_transaction(conflict_msg)
+        dag.conflicts.set_preferred(msg.hash)
 
-#     assert 0
+    all_messages = zip(messages, conflicting_messages)
+
+    for msg, conflict_msg in all_messages:
+        assert dag.is_strongly_preferred(msg)
+        assert not dag.is_strongly_preferred(conflict_msg)
