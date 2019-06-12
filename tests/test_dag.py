@@ -55,6 +55,7 @@ def test_dag_conflicts():
         assert msg.hash in txn_hashes
         assert conflict_msg.hash in txn_hashes
         assert dag.conflicts.is_preferred(msg.hash)
+        assert dag.conflicts.get_preferred(msg.hash) == msg.hash
         assert not dag.conflicts.is_preferred(conflict_msg.hash)
 
 

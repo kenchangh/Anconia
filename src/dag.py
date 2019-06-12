@@ -1,6 +1,7 @@
 from threading import RLock, Lock
 import json
 import time
+import params
 from google.protobuf.json_format import MessageToDict
 
 
@@ -48,6 +49,13 @@ class ConflictSet:
             if conflict_index is None:
                 raise ValueError(f"No conflict set for {txn_hash}")
             self.preferred[conflict_index] = txn_hash
+
+    def get_preferred(self, txn_hash):
+        with self.lock:
+            conflict_index = self.lookup.get(txn_hash, None)
+            if conflict_index is None:
+                raise ValueError(f"No conflict set for {txn_hash}")
+            return self.preferred.get(conflict_index)
 
     def is_preferred(self, txn_hash):
         with self.lock:
@@ -102,7 +110,7 @@ class DAG:
 
         for txn_hash in reversed(tuple(self.transactions.keys())):
             # early termination
-            if len(eligible_parents) >= 30:
+            if len(eligible_parents) >= params.MAX_PARENTS:
                 break
             txn = self.transactions[txn_hash]
             # if self.is_strongly_preferred(txn):
@@ -124,7 +132,9 @@ class DAG:
             txn_hash = queue.pop(0)
             txn = self.transactions[txn_hash]
             for child in txn.children:
-                confidence += self.transactions[child].chit
+                child_txn = self.transactions.get(child)
+                if child_txn:
+                    confidence += child_txn.chit
                 if not visited.get(child):
                     queue.append(child)
                     visited[child] = True
@@ -138,9 +148,30 @@ class DAG:
 
         while queue:
             txn_hash = queue.pop(0)
-            conflict_set = self.conflicts.get_conflict(txn_hash)
-            if conflict_set and not self.conflicts.is_preferred(txn_hash):
-                return False
+            conflict_set = list(self.conflicts.get_conflict(txn_hash))
+
+            # if there is no current preference the conflict set of txn_hash,
+            # decide with the transaction that has the highest confidence
+            # if both have the same confidence, prefer the one that came sooner
+            if conflict_set:
+                preferred = self.conflicts.get_preferred(txn_hash)
+
+                if preferred is None:
+                    confidences = []
+                    for conflict_hash in conflict_set:
+                        txn = self.transactions.get(conflict_hash)
+                        # if txn does not exist, we should request it with MessageClient
+                        # but we leave that for another day
+                        if not txn:
+                            continue
+                        confidence = self.confidence(txn)
+                        confidences.append(confidence)
+                    txn_index = confidences.index(max(confidences))
+                    preferred = conflict_set[txn_index]
+
+                elif preferred != txn_hash:
+                    return False
+
             parents = self.transactions[txn_hash].parents
             for parent in parents:
                 if not visited.get(parent):
