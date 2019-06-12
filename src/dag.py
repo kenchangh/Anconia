@@ -38,9 +38,9 @@ class ConflictSet:
         conflict_index = None
         with self.lock:
             conflict_index = self.lookup.get(txn_hash, None)
-        if conflict_index is None:
-            return set([])
-        return self.conflicts[conflict_index]
+            if conflict_index is None:
+                return set([])
+            return self.conflicts[conflict_index]
 
     def set_preferred(self, txn_hash):
         with self.lock:
@@ -52,6 +52,8 @@ class ConflictSet:
     def is_preferred(self, txn_hash):
         with self.lock:
             conflict_index = self.lookup.get(txn_hash, None)
+            if conflict_index is None:
+                raise ValueError(f"No conflict set for {txn_hash}")
             return self.preferred.get(conflict_index) == txn_hash
 
 

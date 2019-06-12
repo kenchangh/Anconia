@@ -29,7 +29,6 @@ def test_dag_conflicts():
         consensus_algorithm=consensus_algorithm, light_client=True)
     recipient = Keypair()
     attacker = Keypair()
-
     entries = 5
     messages = []
     conflicting_messages = []
@@ -48,19 +47,17 @@ def test_dag_conflicts():
         dag.conflicts.set_preferred(msg.hash)
         conflicting_messages.append(conflict_msg)
 
-    conflict_sets = [set([m[0].hash, m[1].hash])
-                     for m in zip(messages, conflicting_messages)]
+    conflict_sets = zip(messages, conflicting_messages)
 
-    assert len(dag.conflicts.conflicts) == len(conflict_sets)
+    assert len(dag.conflicts.conflicts) == len(list(conflict_sets))
     assert len(dag.transactions) == len(messages) + len(conflicting_messages)
     txn_hashes = list(dag.transactions.keys())
 
-    for msg_hash, conflict_msg_hash in conflict_sets:
-        assert msg_hash in txn_hashes
-        assert conflict_msg_hash in txn_hashes
-
-    for msg in messages:
+    for msg, conflict_msg in conflict_sets:
+        assert msg.hash in txn_hashes
+        assert conflict_msg.hash in txn_hashes
         assert dag.conflicts.is_preferred(msg.hash)
+        assert not dag.conflicts.is_preferred(conflict_msg.hash)
 
 
 def confidence(n):
