@@ -9,7 +9,7 @@ import socketserver
 import traceback
 from proto import messages_pb2
 from message_client import MessageClient
-from common import exponential_backoff
+from common import exponential_backoff, simulate_network_latency
 
 
 class MessageServer:
@@ -60,6 +60,7 @@ class MessageServer:
                     #     self.logger, conn.sendall,
                     #     (response,), timeout=0.01, max_retry=5)
                     conn.sendall(response)
+                    simulate_network_latency()
             conn.close()
         except socket.error:
             # self.logger.error(e)

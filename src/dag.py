@@ -1,6 +1,7 @@
 from threading import RLock, Lock
 import json
 import time
+import logging
 import params
 from google.protobuf.json_format import MessageToDict
 
@@ -11,6 +12,7 @@ class ConflictSet:
         self.conflicts = []
         self.preferred = {}
         self.lock = RLock()
+        self.logger = logging.getLogger('main')
 
     def add_conflict(self, *txns):
         # conflicts are transitive,

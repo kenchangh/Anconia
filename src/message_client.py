@@ -6,7 +6,7 @@ import random
 from hashlib import sha256
 from threading import Lock
 from proto import messages_pb2
-from common import exponential_backoff
+from common import exponential_backoff, simulate_network_latency
 from utils import read_genesis_state
 from crypto import Keypair
 from statedb import StateDB
@@ -141,12 +141,20 @@ class MessageClient:
         s.connect((addr, port))
         s.sendall(msg)
         data = s.recv(1024)
-
+        simulate_network_latency()
         return data
 
     def receive_transaction(self, txn_msg):
-        self.dag.receive_transaction(txn_msg)
-        self.query_txn(txn_msg)
+        # dont accept or query transactions that have work done before
+        queried = False
+        with self.dag.lock:
+            existing_txn = self.dag.transactions.get(txn_msg.hash)
+            if not existing_txn:
+                self.dag.receive_transaction(txn_msg)
+            else:
+                queried = existing_txn.queried
+        if not queried:
+            self.query_txn(txn_msg)
 
     def broadcast_message(self, msg):
         responses = []

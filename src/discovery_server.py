@@ -7,7 +7,7 @@ from threading import Thread
 import logging
 import traceback
 from concurrent.futures import ThreadPoolExecutor
-from common import MCAST_GRP, MCAST_PORT, exponential_backoff
+from common import MCAST_GRP, MCAST_PORT, exponential_backoff, simulate_network_latency
 from message_client import MessageClient
 from proto import messages_pb2
 
@@ -56,6 +56,7 @@ class DiscoveryServer:
             sock.sendto(msg, (MCAST_GRP, MCAST_PORT))
             self.logger.info('Multicasted JOIN message to ' +
                              MCAST_GRP+':'+str(MCAST_PORT))
+            simulate_network_latency()
 
     def listen_multicast(self):
         self.logger.info('Listening to multicast ' +
