@@ -2,11 +2,12 @@ import sys
 import time
 import socket
 import binascii
+import params
 from threading import Thread
 import logging
 import traceback
 from concurrent.futures import ThreadPoolExecutor
-from common import MCAST_GRP, MCAST_PORT, exponential_backoff
+from common import MCAST_GRP, MCAST_PORT, exponential_backoff, simulate_network_latency
 from message_client import MessageClient
 from proto import messages_pb2
 
@@ -23,9 +24,9 @@ class DiscoveryServer:
     def start(self):
         listener_thread = Thread(target=self.listen_multicast)
         listener_thread.start()
-        JOIN_DELAY = 5  # seconds
         joiner_thread = Thread(
-            target=self.delayed_multicast_join, args=(JOIN_DELAY, self.host, self.port))
+            target=self.delayed_multicast_join,
+            args=(params.DISCOVERY_STARTUP_DELAY, self.host, self.port))
         joiner_thread.start()
 
     def create_join_message(self, ack=False):
@@ -55,6 +56,7 @@ class DiscoveryServer:
             sock.sendto(msg, (MCAST_GRP, MCAST_PORT))
             self.logger.info('Multicasted JOIN message to ' +
                              MCAST_GRP+':'+str(MCAST_PORT))
+            simulate_network_latency()
 
     def listen_multicast(self):
         self.logger.info('Listening to multicast ' +
@@ -96,7 +98,9 @@ class DiscoveryServer:
             # ignore self
             if join_msg.address == self.host and join_msg.port == self.port:
                 return
-            self.message_client.add_peer(peer)
+
+            with self.message_client.lock:
+                self.message_client.add_peer(peer)
             ack_msg = self.create_join_message(ack=True)
             self.message_client.send_message(peer, ack_msg)
 

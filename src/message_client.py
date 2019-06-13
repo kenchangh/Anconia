@@ -1,14 +1,18 @@
 import socket
 import time
+import math
 import logging
+import random
 from hashlib import sha256
 from threading import Lock
 from proto import messages_pb2
-from common import exponential_backoff
+from common import exponential_backoff, simulate_network_latency
 from utils import read_genesis_state
 from crypto import Keypair
 from statedb import StateDB
 from dag import DAG
+import analytics
+import params
 
 # TO BE UPDATED PERIODICALLY
 ATTR_NAMES = {
@@ -19,16 +23,23 @@ ATTR_NAMES = {
 
 
 class MessageClient:
-    def __init__(self, consensus_algorithm, light_client=False):
+    def __init__(self, analytics=False, light_client=False):
+        """
+        Client that interacts with other peers in the network.
+
+        light_client=True, to disable peering and storing peer information.
+        """
         self.state = StateDB()
         self.keypair = Keypair.from_genesis_file(read_genesis_state())
         self.dag = DAG()
         self.peers = set([])
 
-        self.consensus_algorithm = consensus_algorithm
         self.logger = logging.getLogger('main')
         self.is_light_client = light_client
         self.lock = Lock()
+
+        self.analytics_enabled = analytics
+        self.analytics_doc_id = None
 
     @staticmethod
     def get_sub_message(message_type, message):
@@ -56,13 +67,71 @@ class MessageClient:
         msg = common_msg.SerializeToString()
         return msg
 
-    def run_consensus(self, txn_msg):
-        self.consensus_algorithm(self, txn_msg)
+    def query_txn(self, txn_msg):
+        query_nodes = []
+        query_success_threshold = math.floor(
+            params.ALPHA_PARAM * params.NETWORK_SAMPLE_SIZE)
+        strongly_preferred_count = 0
+        short_txn_hash = txn_msg.hash[:20]
+
+        with self.lock:
+            if len(self.peers) < params.NETWORK_SAMPLE_SIZE:
+                query_nodes = list(self.peers)
+            else:
+                query_nodes = random.sample(
+                    self.peers, params.NETWORK_SAMPLE_SIZE)
+
+        start_time = time.time()
+        end_by_time = start_time + params.QUERY_TIMEOUT
+
+        for node in query_nodes:
+            # exceeded QUERY_TIMEOUT
+            if time.time() >= end_by_time:
+                self.logger.debug(f'Timeout for query of {short_txn_hash}...')
+                break
+            node_query = messages_pb2.NodeQuery()
+            node_query.txn_hash = txn_msg.hash
+            is_strongly_preferred = self.dag.is_strongly_preferred(txn_msg)
+            node_query.is_strongly_preferred = is_strongly_preferred
+            msg = MessageClient.create_message(
+                messages_pb2.NODE_QUERY_MESSAGE, node_query)
+
+            response = self.send_message(node, msg)
+            if not response:
+                continue
+
+            query_response = MessageClient.get_sub_message(
+                messages_pb2.NODE_QUERY_MESSAGE, response)
+            if query_response.txn_hash != txn_msg.hash:
+                self.logger.error(
+                    f"Invalid txn_hash from query response: {short_txn_hash}...")
+                continue
+
+            strongly_preferred_count += query_response.is_strongly_preferred
+
+        self.logger.info(
+            f'Received {strongly_preferred_count} strongly-preferred responses')
+
+        if strongly_preferred_count >= query_success_threshold:
+            with self.dag.lock:
+                short_txn_hash = txn_msg.hash[:20]
+                self.logger.info(f'Added chit to {short_txn_hash}...')
+                self.dag.transactions[txn_msg.hash].chit = True
 
     def add_peer(self, new_peer):
         addr, port = new_peer
         self.peers.add(new_peer)
         self.logger.info(f'Added new peer {addr}:{port}')
+
+        if self.analytics_enabled:
+            if self.analytics_doc_id is None:
+                self.analytics_doc_id = analytics.set_nodes(self.peers)
+                self.logger.info(
+                    f'Added to analytics/nodes/{self.analytics_doc_id}')
+            else:
+                analytics.update_nodes(self.analytics_doc_id, self.peers)
+                self.logger.info(
+                    f'Updated analytics/nodes/{self.analytics_doc_id}')
 
     def send_message(self, node, msg):
         result = exponential_backoff(
@@ -86,8 +155,21 @@ class MessageClient:
         s.connect((addr, port))
         s.sendall(msg)
         data = s.recv(1024)
-
+        simulate_network_latency()
         return data
+
+    def receive_transaction(self, txn_msg):
+        # dont accept or query transactions that have work done before
+        queried = False
+        with self.dag.lock:
+            existing_txn = self.dag.transactions.get(txn_msg.hash)
+            if not existing_txn:
+                self.dag.receive_transaction(txn_msg)
+            else:
+                queried = existing_txn.queried
+        if not queried:
+            self.query_txn(txn_msg)
+            self.dag.transactions[txn_msg.hash].queried = True
 
     def broadcast_message(self, msg):
         responses = []
@@ -95,7 +177,7 @@ class MessageClient:
         for addr, port in peers:
             node = (addr, port)
             self.send_message(node, msg)
-        if self.peers:
+        if peers:
             self.logger.info('Broadcasted transaction')
         else:
             self.logger.info('No peers, did not broadcast transaction')
