@@ -33,6 +33,6 @@ def set_nodes(peers):
 def update_nodes(document_id, peers):
     peers = to_peers_string(peers)
     node_ref = nodes_ref.document(document_id)
-    node_ref.set({
+    node_ref.update({
         'peers': peers
     })
