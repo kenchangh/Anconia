@@ -11,6 +11,7 @@ from utils import read_genesis_state
 from crypto import Keypair
 from statedb import StateDB
 from dag import DAG
+import analytics
 import params
 
 # TO BE UPDATED PERIODICALLY
@@ -22,7 +23,7 @@ ATTR_NAMES = {
 
 
 class MessageClient:
-    def __init__(self, light_client=False):
+    def __init__(self, analytics=False, light_client=False):
         """
         Client that interacts with other peers in the network.
 
@@ -36,6 +37,9 @@ class MessageClient:
         self.logger = logging.getLogger('main')
         self.is_light_client = light_client
         self.lock = Lock()
+
+        self.analytics_enabled = analytics
+        self.analytics_doc_id = None
 
     @staticmethod
     def get_sub_message(message_type, message):
@@ -105,19 +109,29 @@ class MessageClient:
 
             strongly_preferred_count += query_response.is_strongly_preferred
 
-        self.logger.debug(
+        self.logger.info(
             f'Received {strongly_preferred_count} strongly-preferred responses')
 
         if strongly_preferred_count >= query_success_threshold:
             with self.dag.lock:
                 short_txn_hash = txn_msg.hash[:20]
-                self.logger.debug(f'Added chit to {short_txn_hash}...')
+                self.logger.info(f'Added chit to {short_txn_hash}...')
                 self.dag.transactions[txn_msg.hash].chit = True
 
     def add_peer(self, new_peer):
         addr, port = new_peer
         self.peers.add(new_peer)
         self.logger.info(f'Added new peer {addr}:{port}')
+
+        if self.analytics_enabled:
+            if self.analytics_doc_id is None:
+                self.analytics_doc_id = analytics.set_nodes(self.peers)
+                self.logger.info(
+                    f'Added to analytics/nodes/{self.analytics_doc_id}')
+            else:
+                analytics.update_nodes(self.analytics_doc_id, self.peers)
+                self.logger.info(
+                    f'Updated analytics/nodes/{self.analytics_doc_id}')
 
     def send_message(self, node, msg):
         result = exponential_backoff(
@@ -155,6 +169,7 @@ class MessageClient:
                 queried = existing_txn.queried
         if not queried:
             self.query_txn(txn_msg)
+            self.dag.transactions[txn_msg.hash].queried = True
 
     def broadcast_message(self, msg):
         responses = []

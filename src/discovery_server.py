@@ -98,7 +98,9 @@ class DiscoveryServer:
             # ignore self
             if join_msg.address == self.host and join_msg.port == self.port:
                 return
-            self.message_client.add_peer(peer)
+
+            with self.message_client.lock:
+                self.message_client.add_peer(peer)
             ack_msg = self.create_join_message(ack=True)
             self.message_client.send_message(peer, ack_msg)
 

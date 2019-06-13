@@ -20,8 +20,8 @@ logger.propagate = False
 
 
 class Anconia:
-    def start(self, host='127.0.0.1', port=5000, pubkey='123', nickname='abc'):
-        message_client = MessageClient()
+    def start(self, host='127.0.0.1', port=5000, analytics=False, pubkey='123', nickname='abc'):
+        message_client = MessageClient(analytics=analytics)
         message_server = MessageServer(message_client, host=host, port=port)
 
         discovery_server = DiscoveryServer(
@@ -37,9 +37,11 @@ if __name__ == '__main__':
     parser.add_argument('--verbose', '-v', action='store_true',
                         help='Verbose logging turned on')
     parser.add_argument(
-        '--host', '-a', type=str, help='Starts the RPC server with this host', default='127.0.0.1')
+        '--host', '-x', type=str, help='Starts the RPC server with this host', default='127.0.0.1')
     parser.add_argument(
         '--port', '-p', type=int, help='Starts the RPC server with this port', default=5000)
+    parser.add_argument(
+        '--analytics', '-a', type=bool, help='Starts the RPC server with analytics reporting', default=False)
     args = parser.parse_args(sys.argv[1:])
 
     if args.verbose:
@@ -48,4 +50,4 @@ if __name__ == '__main__':
         logging.basicConfig(level=logging.INFO)
 
     anconia = Anconia()
-    anconia.start(host=args.host, port=args.port)
+    anconia.start(host=args.host, port=args.port, analytics=args.analytics)
