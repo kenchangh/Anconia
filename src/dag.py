@@ -79,27 +79,29 @@ class DAG:
 
     def check_for_conflict(self, incoming_txn):
         conflict = set([])
+
         for txn_hash in self.transactions:
             txn = self.transactions[txn_hash]
             if txn.sender == incoming_txn.sender and txn.nonce == incoming_txn.nonce:
-                updated_conflict = set([])
-                updated_conflict = self.conflicts.add_conflict(
+                self.conflicts.add_conflict(
                     incoming_txn.hash, txn.hash)
-                return updated_conflict
+                preferred = self.decide_on_preference(incoming_txn.hash)
+                # print(
+                #     f'Conflict exists! ({txn.hash[:20]}, {incoming_txn.hash[:20]})')
+                # print(f'Preferred txn {preferred[:20]}')
         return conflict
 
     def receive_transaction(self, incoming_txn):
-        with self.lock:
-            if not self.transactions.get(incoming_txn.hash):
-                self.check_for_conflict(incoming_txn)
-                parents = self.select_parents(incoming_txn)
-                incoming_txn.parents.extend(parents)
-                for parent in parents:
-                    self.transactions[parent].children.append(
-                        incoming_txn.hash)
+        if not self.transactions.get(incoming_txn.hash):
+            self.check_for_conflict(incoming_txn)
+            parents = self.select_parents(incoming_txn)
+            incoming_txn.parents.extend(parents)
+            for parent in parents:
+                self.transactions[parent].children.append(
+                    incoming_txn.hash)
 
-                incoming_txn.chit = False
-                self.transactions[incoming_txn.hash] = incoming_txn
+            incoming_txn.chit = False
+            self.transactions[incoming_txn.hash] = incoming_txn
 
     def select_parents(self, incoming_txn):
         # to select a parent, we select a transaction
@@ -142,6 +144,24 @@ class DAG:
                     visited[child] = True
         return confidence
 
+    def decide_on_preference(self, txn_hash):
+        conflict_set = list(self.conflicts.get_conflict(txn_hash))
+        confidences = []
+
+        for conflict_hash in conflict_set:
+            txn = self.transactions.get(conflict_hash)
+            # if txn does not exist, we should request it with MessageClient
+            # but we leave that for another day
+            if not txn:
+                continue
+            confidence = self.confidence(txn)
+            confidences.append(confidence)
+        txn_index = confidences.index(max(confidences))
+        preferred = conflict_set[txn_index]
+
+        self.conflicts.set_preferred(preferred)
+        return preferred
+
     def is_strongly_preferred(self, txn):
         visited = {}
         queue = []
@@ -150,7 +170,7 @@ class DAG:
 
         while queue:
             txn_hash = queue.pop(0)
-            conflict_set = list(self.conflicts.get_conflict(txn_hash))
+            conflict_set = self.conflicts.get_conflict(txn_hash)
 
             # if there is no current preference the conflict set of txn_hash,
             # decide with the transaction that has the highest confidence
@@ -159,18 +179,7 @@ class DAG:
                 preferred = self.conflicts.get_preferred(txn_hash)
 
                 if preferred is None:
-                    confidences = []
-                    for conflict_hash in conflict_set:
-                        txn = self.transactions.get(conflict_hash)
-                        # if txn does not exist, we should request it with MessageClient
-                        # but we leave that for another day
-                        if not txn:
-                            continue
-                        confidence = self.confidence(txn)
-                        confidences.append(confidence)
-                    txn_index = confidences.index(max(confidences))
-                    preferred = conflict_set[txn_index]
-
+                    self.decide_on_preference(txn_hash)
                 elif preferred != txn_hash:
                     return False
 

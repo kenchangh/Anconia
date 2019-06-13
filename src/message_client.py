@@ -3,6 +3,7 @@ import time
 import math
 import logging
 import random
+from concurrent.futures import ThreadPoolExecutor
 from hashlib import sha256
 from threading import Lock
 from proto import messages_pb2
@@ -38,6 +39,7 @@ class MessageClient:
         self.is_light_client = light_client
         self.lock = Lock()
 
+        self.thread_executor = ThreadPoolExecutor(max_workers=4)
         self.analytics_enabled = analytics
         self.analytics_doc_id = None
 
@@ -110,13 +112,16 @@ class MessageClient:
             strongly_preferred_count += query_response.is_strongly_preferred
 
         self.logger.info(
-            f'Received {strongly_preferred_count} strongly-preferred responses')
+            f'Received {strongly_preferred_count} strongly-preferred responses for {short_txn_hash}')
 
         if strongly_preferred_count >= query_success_threshold:
             with self.dag.lock:
                 short_txn_hash = txn_msg.hash[:20]
                 self.logger.info(f'Added chit to {short_txn_hash}...')
                 self.dag.transactions[txn_msg.hash].chit = True
+
+        with self.dag.lock:
+            self.dag.transactions[txn_msg.hash].queried = True
 
     def add_peer(self, new_peer):
         addr, port = new_peer
@@ -161,15 +166,31 @@ class MessageClient:
     def receive_transaction(self, txn_msg):
         # dont accept or query transactions that have work done before
         queried = False
-        with self.dag.lock:
-            existing_txn = self.dag.transactions.get(txn_msg.hash)
-            if not existing_txn:
+        existing_txn = self.dag.transactions.get(txn_msg.hash)
+        if not existing_txn:
+            with self.dag.lock:
                 self.dag.receive_transaction(txn_msg)
-            else:
-                queried = existing_txn.queried
+        else:
+            queried = existing_txn.queried
+
         if not queried:
-            self.query_txn(txn_msg)
-            self.dag.transactions[txn_msg.hash].queried = True
+            self.thread_executor.submit(self.query_txn, txn_msg)
+            # self.query_txn(txn_msg)
+
+        if self.analytics_enabled:
+            is_preferred = False
+
+            with self.dag.lock:
+                conflict_set = set(
+                    self.dag.conflicts.get_conflict(txn_msg.hash))
+                if conflict_set:
+                    is_preferred = self.dag.conflicts.is_preferred(
+                        txn_msg.hash)
+                    conflict_set.remove(txn_msg.hash)  # remove self
+
+            analytics.set_transaction(
+                txn_msg, list(conflict_set), is_preferred)
+            self.logger.info(f'Added txn {txn_msg.hash[:20]}... to analytics')
 
     def broadcast_message(self, msg):
         responses = []

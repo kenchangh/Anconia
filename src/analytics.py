@@ -14,6 +14,7 @@ firebase_admin.initialize_app(cred, {
 
 db = firestore.client()
 nodes_ref = db.collection('nodes')
+transactions_ref = db.collection('transactions')
 
 
 def to_peers_string(peers):
@@ -36,3 +37,28 @@ def update_nodes(document_id, peers):
     node_ref.update({
         'peers': peers
     })
+
+
+@firestore.transactional
+def update_children(transaction, txn_ref, child):
+    snapshot = txn_ref.get(transaction=transaction)
+    children_snapshot = snapshot.get('children')
+    children_snapshot.append(child)
+
+    transaction.update(txn_ref, {
+        'children': children_snapshot
+    })
+
+
+def set_transaction(txn_msg, conflicts, is_preferred):
+    txn_ref = transactions_ref.document(txn_msg.hash)
+    txn_ref.set({
+        'children': [child for child in txn_msg.children],
+        'conflicts': conflicts,
+        'is_preferred': is_preferred,
+        'chit': txn_msg.chit,
+    }, merge=True)
+
+    for parent in txn_msg.parents:
+        db_transaction = db.transaction()
+        update_children(db_transaction, txn_ref, parent)
