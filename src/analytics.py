@@ -40,7 +40,7 @@ def update_nodes(document_id, peers):
 
 
 @firestore.transactional
-def update_children(instance_ref, transaction, txn_hash, parent):
+def update_children(transaction, instance_ref, txn_hash, parent):
     txn_ref = instance_ref.collection('transactions').document(parent)
 
     snapshot = txn_ref.get(transaction=transaction)
@@ -65,4 +65,4 @@ def set_transaction(instance_id, txn_msg, conflicts, is_preferred):
 
     for parent in txn_msg.parents:
         db_transaction = db.transaction()
-        update_children(instance_ref, db_transaction, txn_msg.hash, parent)
+        update_children(db_transaction, instance_ref, txn_msg.hash, parent)
