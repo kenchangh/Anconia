@@ -189,7 +189,7 @@ class MessageClient:
                     conflict_set.remove(txn_msg.hash)  # remove self
 
             analytics.set_transaction(
-                txn_msg, list(conflict_set), is_preferred)
+                self.analytics_doc_id, txn_msg, list(conflict_set), is_preferred)
             self.logger.info(f'Added txn {txn_msg.hash[:20]}... to analytics')
 
     def broadcast_message(self, msg):
