@@ -9,12 +9,12 @@ service_key = os.path.join(root_dir, 'service-key.json')
 
 cred = credentials.Certificate(service_key)
 firebase_admin.initialize_app(cred, {
-    'databaseURL': 'https://anconia-4008c.firebaseio.com'
+    'databaseURL': 'https://anconia-project.firebaseio.com'
 })
 
 db = firestore.client()
 nodes_ref = db.collection('nodes')
-transactions_ref = db.collection('transactions')
+all_transactions_ref = db.collection('transactions')
 
 
 def to_peers_string(peers):
@@ -53,14 +53,17 @@ def update_children(transaction, instance_ref, txn_hash, parent):
 
 
 def set_transaction(instance_id, txn_msg, conflicts, is_preferred):
-    instance_ref = transactions_ref.document(instance_id)
-    txn_ref = instance_ref.collection('transactions').document(txn_msg.hash)
+    instance_ref = all_transactions_ref.document(instance_id)
+    transactions_ref = instance_ref.collection('transactions')
+    txn_ref = transactions_ref.document(txn_msg.hash)
 
+    instance_ref.set({'created_at': firestore.SERVER_TIMESTAMP})
     txn_ref.set({
         'children': [child for child in txn_msg.children],
         'conflicts': conflicts,
         'is_preferred': is_preferred,
         'chit': txn_msg.chit,
+        'timestamp': firestore.SERVER_TIMESTAMP,
     }, merge=True)
 
     for parent in txn_msg.parents:
