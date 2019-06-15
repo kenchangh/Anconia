@@ -150,3 +150,32 @@ def test_dag_decide_preferrence():
         preferred = dag.decide_on_preference(conflict_msg.hash)
         assert dag.conflicts.get_preferred(msg.hash) == preferred
         assert dag.conflicts.is_preferred(preferred)
+
+
+def test_dag_progeny_has_conflict():
+    dag = DAG()
+    client = MessageClient(light_client=True)
+    recipient = Keypair()
+    attacker = Keypair()
+    entries = 5
+    messages = []
+    preferred_txns = []
+
+    # first 5 do not have conflicts
+    for _ in range(entries):
+        msg = client.generate_txn_object(recipient.address, 100)
+        dag.receive_transaction(msg)
+        assert not dag.progeny_has_conflict(msg)
+
+    for _ in range(entries):
+        msg = client.generate_txn_object(recipient.address, 100)
+        dag.receive_transaction(msg)
+        messages.append(msg)
+
+    for msg in messages:
+        conflict_msg = client.generate_conflicting_txn(
+            msg, attacker.address, 100)
+        dag.receive_transaction(conflict_msg)
+
+        for parent in dag.transactions[conflict_msg.hash].parents:
+            assert dag.progeny_has_conflict(dag.transactions[parent])

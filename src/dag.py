@@ -118,10 +118,13 @@ class DAG:
                 break
             txn = self.transactions[txn_hash]
             # if self.is_strongly_preferred(txn):
-            n_conflicts = len(self.conflicts.get_conflict(txn_hash))
-            confidence = self.confidence(txn)
-            if confidence > 0 or n_conflicts == 0:
-                eligible_parents.append(txn_hash)
+            # n_conflicts = len(self.conflicts.get_conflict(txn_hash))
+
+            if self.is_strongly_preferred(txn):
+                progeny_has_conflict = self.progeny_has_conflict(txn)
+                confidence = self.confidence(txn)
+                if confidence > 0 or not progeny_has_conflict:
+                    eligible_parents.append(txn_hash)
 
         return eligible_parents
 
@@ -145,7 +148,10 @@ class DAG:
         return confidence
 
     def decide_on_preference(self, txn_hash):
-        conflict_set = list(self.conflicts.get_conflict(txn_hash))
+        # sorting the conflict set ensures that all nodes
+        # converge on the same order for preferring certain transactions
+        # in the event of transactions having the same confidence
+        conflict_set = sorted(list(self.conflicts.get_conflict(txn_hash)))
         confidences = []
 
         for conflict_hash in conflict_set:
@@ -161,6 +167,24 @@ class DAG:
 
         self.conflicts.set_preferred(preferred)
         return preferred
+
+    def progeny_has_conflict(self, txn):
+        visited = {}
+        queue = []
+        queue.append(txn.hash)
+        visited[txn.hash] = True
+
+        while queue:
+            txn_hash = queue.pop(0)
+            txn = self.transactions[txn_hash]
+            conflicts = self.conflicts.get_conflict(txn_hash)
+            if conflicts:
+                return True
+
+            for child in txn.children:
+                queue.append(child)
+                visited[child] = True
+        return False
 
     def is_strongly_preferred(self, txn):
         visited = {}
