@@ -45,6 +45,9 @@ def update_children(transaction, instance_ref, txn_hash, parent):
 
     snapshot = txn_ref.get(transaction=transaction)
     children_snapshot = snapshot.get('children')
+
+    if not children_snapshot:
+        children_snapshot = []
     children_snapshot.append(txn_hash)
 
     transaction.update(txn_ref, {
