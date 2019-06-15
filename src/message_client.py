@@ -40,7 +40,7 @@ class MessageClient:
         self.lock = Lock()
 
         self.start_query_worker()
-        self.thread_executor = ThreadPoolExecutor(max_workers=4)
+        self.thread_executor = ThreadPoolExecutor(max_workers=8)
         self.analytics_enabled = analytics
         self.analytics_doc_id = None
 
@@ -77,19 +77,24 @@ class MessageClient:
             thread.start()
 
     def query_loop(self):
+        running_queries = {}
         accepted = set([])
         while True:
             txn_hashes = tuple(self.dag.transactions.keys())
             for txn_hash in txn_hashes:
                 txn = self.dag.transactions[txn_hash]
-                if not txn.queried:
-                    self.thread_executor.submit(self.query_txn, txn)
-                if not txn.accepted:
+                running = running_queries.get(txn_hash)
+
+                if not running:
+                    if not txn.queried:
+                        running_queries[txn_hash] = True
+                        self.thread_executor.submit(self.query_txn, txn)
+                if txn.queried and not txn.accepted:
                     self.dag.update_accepted(txn)
 
-                if txn.accepted:
-                    print(f'Updated accepted set {accepted}')
+                if txn.accepted and txn_hash not in accepted:
                     accepted.add(txn.hash)
+                    print(f'Updated accepted set {accepted}')
 
     def select_network_sample(self):
         with self.lock:
@@ -111,8 +116,9 @@ class MessageClient:
 
         while consecutive_count < params.BETA_CONSECUTIVE_PARAM:
             if iterations >= params.MAX_QUERY_ITERATIONS:
-                raise RuntimeError(
-                    f'Query iterations exceeded {params.MAX_QUERY_ITERATIONS}')
+                break
+                # raise RuntimeError(
+                #     f'Query iterations exceeded {params.MAX_QUERY_ITERATIONS}')
 
             strongly_preferred_count = 0
             query_nodes = self.select_network_sample()
@@ -156,10 +162,12 @@ class MessageClient:
                     self.dag.transactions[txn_msg.hash].chit = True
                     consecutive_count += 1
                 else:
+                    self.logger.info(f'Reverted chit of {short_txn_hash}...')
                     self.dag.transactions[txn_msg.hash].chit = False
                     consecutive_count = 0
 
-            time.sleep(params.TIME_BETWEEN_QUERIES)
+            iterations += 1
+            # time.sleep(params.TIME_BETWEEN_QUERIES)
 
         with self.dag.lock:
             self.logger.info(
