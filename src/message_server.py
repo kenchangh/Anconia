@@ -102,13 +102,7 @@ class MessageServer:
             traceback.print_exc()
 
     def handle_transaction(self, txn_msg):
-        # self.logger.info('Received transaction')
-        valid_txn = self.message_client.verify_transaction(txn_msg)
-        if not valid_txn:
-            self.logger.error(
-                'Invalid transaction, signature is invalid for '+str(txn_msg))
-        else:
-            self.message_client.receive_transaction(txn_msg)
+        self.message_client.receive_transaction(txn_msg)
 
     def handle_node_query(self, query_msg):
         """
@@ -123,20 +117,47 @@ class MessageServer:
 
         with self.message_client.lock:
             if not self.message_client.dag.transactions.get(txn_hash):
+                # if transaction doesn't exist locally,
+                # request from the querying node to patch the transaction
+                # make own decision from received transaction
+                # txn = self.message_client.request_transaction(
+                #     txn_hash, query_msg.from_address, query_msg.from_port)
+                # if txn:
+                #     self.message_client.receive_transaction(txn)
+                #     is_strongly_preferred = self.message_client.dag.is_strongly_preferred(
+                #         txn)
+                # else:
+                #     is_strongly_preferred = query_msg.is_strongly_preferred
                 is_strongly_preferred = query_msg.is_strongly_preferred
             else:
                 txn = self.message_client.dag.transactions[txn_hash]
                 is_strongly_preferred = self.message_client.dag.is_strongly_preferred(
                     txn)
+                # print(
+                #     f'Default: {query_msg.is_strongly_preferred}, Response: {is_strongly_preferred}')
 
         response_query = messages_pb2.NodeQuery()
         response_query.txn_hash = txn_hash
         response_query.is_strongly_preferred = is_strongly_preferred
+        response_query.from_address = self.address
+        response_query.from_port = self.port
         msg = MessageClient.create_message(
             messages_pb2.NODE_QUERY_MESSAGE, response_query)
         return msg
 
-    def handle_sync_graph(self, sync_graph_msg):
+    def handle_sync_graph(self, request_sync_graph_msg):
+        if request_sync_graph_msg.target_txn_hash:
+            sync_msg = messages_pb2.SyncGraph()
+            txn = self.message_client.dag.transactions.get(
+                request_sync_graph_msg.target_txn_hash)
+
+            if txn:
+                sync_msg.transactions.append(txn)
+                msg = MessageClient.create_message(
+                    messages_pb2.SYNC_GRAPH_MESSAGE, sync_msg)
+                return msg
+            return ''
+
         sync_msg = messages_pb2.SyncGraph()
         transactions = self.message_client.dag.transactions.values()
         sync_msg.transactions.extend(transactions)

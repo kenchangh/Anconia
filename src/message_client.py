@@ -193,27 +193,27 @@ class MessageClient:
         while consecutive_count < params.BETA_CONSECUTIVE_PARAM:
             if iterations >= params.MAX_QUERY_ITERATIONS:
                 break
-                # raise RuntimeError(
-                #     f'Query iterations exceeded {params.MAX_QUERY_ITERATIONS}')
 
             strongly_preferred_count = 0
             query_nodes = self.select_network_sample()
-
             start_time = time.time()
             end_by_time = start_time + params.QUERY_TIMEOUT
+
+            is_strongly_preferred = self.dag.is_strongly_preferred(txn_msg)
+            node_query = messages_pb2.NodeQuery()
+            node_query.txn_hash = txn_msg.hash
+            node_query.is_strongly_preferred = is_strongly_preferred
+            node_query.from_address = self.host
+            node_query.from_port = self.port
+            msg = MessageClient.create_message(
+                messages_pb2.NODE_QUERY_MESSAGE, node_query)
 
             for node in query_nodes:
                 # exceeded QUERY_TIMEOUT
                 if time.time() >= end_by_time:
-                    self.logger.debug(
+                    self.logger.info(
                         f'Timeout for query of {short_txn_hash}...')
                     break
-                node_query = messages_pb2.NodeQuery()
-                node_query.txn_hash = txn_msg.hash
-                is_strongly_preferred = self.dag.is_strongly_preferred(txn_msg)
-                node_query.is_strongly_preferred = is_strongly_preferred
-                msg = MessageClient.create_message(
-                    messages_pb2.NODE_QUERY_MESSAGE, node_query)
 
                 response = self.send_message(node, msg)
                 if not response:
@@ -298,8 +298,41 @@ class MessageClient:
         simulate_network_latency()
         return data
 
+    def request_transaction(self, txn_hash, fulfiller_host, fulfiller_port):
+        request_sync_msg = messages_pb2.RequestSyncGraph()
+        request_sync_msg.address = self.host
+        request_sync_msg.port = self.port
+        request_sync_msg.pubkey = self.keypair.pubkey.to_string().hex()
+        request_sync_msg.target_txn_hash = txn_hash
+
+        try:
+            msg = MessageClient.create_message(
+                messages_pb2.REQUEST_SYNC_GRAPH_MESSAGE, request_sync_msg)
+            node = (fulfiller_host, fulfiller_port)
+            response = self.send_message(node, msg)
+
+            common_msg = messages_pb2.CommonMessage()
+            common_msg.ParseFromString(response)
+            sync_graph = messages_pb2.SyncGraph()
+            sync_graph.CopyFrom(common_msg.sync_graph)
+            # only the requested transaction should be returned
+            if len(sync_graph.transactions) != 1:
+                raise ValueError('Expected only 1 transaction')
+
+            txn = sync_graph.transactions[0]
+            if txn.hash != txn_hash:
+                raise ValueError(f'Wrong transaction hash {txn.hash}')
+            return txn
+        except Exception as e:
+            self.logger.error(e)
+            return None
+
     def receive_transaction(self, txn_msg):
-        # print('Graph status', self.dag.analyze_graph())
+        valid_txn = self.verify_transaction(txn_msg)
+        if not valid_txn:
+            self.logger.error(
+                'Invalid transaction, signature is invalid for '+str(txn_msg))
+            return
 
         # dont accept or query transactions that have work done before
         existing_txn = self.dag.transactions.get(txn_msg.hash)

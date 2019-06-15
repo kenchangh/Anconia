@@ -8,7 +8,7 @@ MAX_PARENTS = 10
 MAX_QUERY_ITERATIONS = 10
 
 # Networking settings
-QUERY_TIMEOUT = 3  # seconds
+QUERY_TIMEOUT = 10  # seconds
 TIME_BETWEEN_QUERIES = 0.005  # seconds
 DISCOVERY_STARTUP_DELAY = 1  # seconds
 SYNC_GRAPH_DELAY = 3  # seconds
