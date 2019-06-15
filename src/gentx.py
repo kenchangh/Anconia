@@ -21,12 +21,12 @@ def _create_random_transactions(message_client):
         message_client.broadcast_message(msg)
         time.sleep(params.RANDOM_TX_GENERATION)
 
-        # conflict_msg_obj = message_client.generate_conflicting_txn(
-        #     msg_obj, attacker.address, 100)
-        # conflict_msg = MessageClient.create_message(
-        #     messages_pb2.TRANSACTION_MESSAGE, conflict_msg_obj)
-        # message_client.broadcast_message(conflict_msg)
-        # time.sleep(params.RANDOM_TX_GENERATION)
+        conflict_msg_obj = message_client.generate_conflicting_txn(
+            msg_obj, attacker.address, 100)
+        conflict_msg = MessageClient.create_message(
+            messages_pb2.TRANSACTION_MESSAGE, conflict_msg_obj)
+        message_client.broadcast_message(conflict_msg)
+        time.sleep(params.RANDOM_TX_GENERATION)
 
 
 def create_random_transactions(message_client):

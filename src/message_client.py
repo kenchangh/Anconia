@@ -211,7 +211,7 @@ class MessageClient:
             for node in query_nodes:
                 # exceeded QUERY_TIMEOUT
                 if time.time() >= end_by_time:
-                    self.logger.info(
+                    self.logger.error(
                         f'Timeout for query of {short_txn_hash}...')
                     break
 
@@ -285,7 +285,9 @@ class MessageClient:
         addr, port = node
         s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         # self.logger.debug(f'Connecting to {addr}:{port}')
+        s.settimeout(params.CLIENT_SOCKET_TIMEOUT)
         s.connect((addr, port))
+        s.settimeout(None)
         s.sendall(msg)
 
         data = b''
