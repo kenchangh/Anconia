@@ -227,7 +227,7 @@ class DAG:
             txn_hash = queue.pop(0)
             txn = self.transactions[txn_hash]
 
-            if txn.queried:
+            if txn.queried and txn.chit:
                 if not txn.accepted:
                     confidence = self.confidence(txn)
                     if confidence > params.BETA_CONFIDENCE_PARAM:
