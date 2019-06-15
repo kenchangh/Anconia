@@ -182,8 +182,9 @@ class DAG:
                 return True
 
             for child in txn.children:
-                queue.append(child)
-                visited[child] = True
+                if not visited.get(child):
+                    queue.append(child)
+                    visited[child] = True
         return False
 
     def is_strongly_preferred(self, txn):
@@ -213,3 +214,43 @@ class DAG:
                     queue.append(parent)
                     visited[parent] = True
         return True
+
+    def analyze_graph(self):
+        keys = self.transactions.keys()
+        if not keys:
+            return (0, 0)
+
+        first_key = list(keys)[0]
+        txn = self.transactions[first_key]
+        max_depth = 0
+        max_breadth = 0
+
+        for txn_hash in self.transactions:
+            txn = self.transactions[txn_hash]
+            if len(txn.parents) == 0:
+                max_breadth += 1
+
+        visited = {}
+        queue = []
+        depth_queue = []
+        queue.append(txn.hash)
+        depth_queue.append(0)
+        visited[txn.hash] = True
+
+        while queue:
+            txn_hash = queue.pop(0)
+            depth = depth_queue.pop(0)
+            txn = self.transactions[txn_hash]
+            children = txn.children
+
+            for child in children:
+                if not visited.get(child):
+                    depth_queue.append(depth+1)
+                    queue.append(child)
+                    visited[child] = True
+
+            if depth_queue:
+                if max(depth_queue) > max_depth:
+                    max_depth = depth
+
+        return max_breadth, max_depth, len(keys)
