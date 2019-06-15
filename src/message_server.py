@@ -85,6 +85,8 @@ class MessageServer:
                 messages_pb2.TRANSACTION_MESSAGE: ('Transaction', 'transaction', self.handle_transaction),
                 messages_pb2.NODE_QUERY_MESSAGE: (
                     'NodeQuery', 'node_query', self.handle_node_query),
+                messages_pb2.REQUEST_SYNC_GRAPH_MESSAGE: (
+                    'RequestSyncGraph', 'request_sync_graph', self.handle_sync_graph),
             }
 
             handler = message_handlers.get(common_msg.message_type)
@@ -132,6 +134,22 @@ class MessageServer:
         response_query.is_strongly_preferred = is_strongly_preferred
         msg = MessageClient.create_message(
             messages_pb2.NODE_QUERY_MESSAGE, response_query)
+        return msg
+
+    def handle_sync_graph(self, sync_graph_msg):
+        sync_msg = messages_pb2.SyncGraph()
+        transactions = self.message_client.dag.transactions.values()
+        sync_msg.transactions.extend(transactions)
+        conflict_sets = self.message_client.dag.conflicts.conflicts
+
+        for conflict_set in conflict_sets:
+            conflict_msg = messages_pb2.ConflictSet()
+            conflict_msg.hashes.extend(conflict_set)
+            sync_msg.conflicts.append(conflict_msg)
+
+        msg = MessageClient.create_message(
+            messages_pb2.SYNC_GRAPH_MESSAGE, sync_msg
+        )
         return msg
 
     def add_peer(self, join_msg):

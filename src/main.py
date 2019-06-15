@@ -21,12 +21,15 @@ logger.propagate = False
 
 class Anconia:
     def start(self, host='127.0.0.1', port=5000, analytics=False, pubkey='123', nickname='abc'):
-        message_client = MessageClient(analytics=analytics)
+        message_client = MessageClient(
+            host=host, port=port, analytics=analytics)
         message_server = MessageServer(message_client, host=host, port=port)
 
         discovery_server = DiscoveryServer(
             message_client, host, port, nickname)
         discovery_server.start()
+
+        message_client.sync_graph()
 
         create_random_transactions(message_client)
         message_server.start()

@@ -5,6 +5,8 @@ enum MessageType {
   JOIN_MESSAGE = 0;
   TRANSACTION_MESSAGE = 1;
   NODE_QUERY_MESSAGE = 2;
+  SYNC_GRAPH_MESSAGE = 3;
+  REQUEST_SYNC_GRAPH_MESSAGE = 4;
 }
 
 message CommonMessage {
@@ -14,12 +16,18 @@ message CommonMessage {
     Join join = 2;
     Transaction transaction = 3;
     NodeQuery node_query = 4;
+    SyncGraph sync_graph = 5;
+    RequestSyncGraph request_sync_graph = 6;
   }
 }
 
 message NodeQuery {
   required string txn_hash = 1;
   required bool is_strongly_preferred = 2;
+}
+
+message ConflictSet {
+  repeated string hashes = 1;
 }
 
 message Transaction {
@@ -38,6 +46,17 @@ message Transaction {
   optional bool chit = 11;
   optional bool queried = 12;
   optional bool accepted = 13;
+}
+
+message SyncGraph {
+  repeated Transaction transactions = 1;
+  repeated ConflictSet conflicts = 2;
+}
+
+message RequestSyncGraph {
+  required string address = 1;
+  required int32 port = 2;
+  required string pubkey = 3;
 }
 
 message Join {

@@ -10,7 +10,8 @@ MAX_QUERY_ITERATIONS = 10
 # Networking settings
 QUERY_TIMEOUT = 3  # seconds
 TIME_BETWEEN_QUERIES = 0.005  # seconds
-DISCOVERY_STARTUP_DELAY = 3  # seconds
+DISCOVERY_STARTUP_DELAY = 1  # seconds
+SYNC_GRAPH_DELAY = 3  # seconds
 RANDOM_TX_GENERATION = 5  # seconds
 NETWORK_LATENCY_MIN = 0.001 * 1000  # milliseconds
 NETWORK_LATENCY_MAX = 1 * 1000  # milliseconds

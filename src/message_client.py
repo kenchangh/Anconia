@@ -20,16 +20,21 @@ ATTR_NAMES = {
     messages_pb2.NODE_QUERY_MESSAGE: 'node_query',
     messages_pb2.JOIN_MESSAGE: 'join',
     messages_pb2.TRANSACTION_MESSAGE: 'transaction',
+    messages_pb2.SYNC_GRAPH_MESSAGE: 'sync_graph',
+    messages_pb2.REQUEST_SYNC_GRAPH_MESSAGE: 'request_sync_graph',
 }
 
 
 class MessageClient:
-    def __init__(self, analytics=False, light_client=False):
+    def __init__(self, host='127.0.0.1', port=5000, analytics=False, light_client=False):
         """
         Client that interacts with other peers in the network.
 
         light_client=True, to disable peering and storing peer information.
         """
+        self.host = host
+        self.port = port
+
         self.state = StateDB()
         self.keypair = Keypair.from_genesis_file(read_genesis_state())
         self.dag = DAG()
@@ -69,6 +74,77 @@ class MessageClient:
         getattr(common_msg, attr_name).CopyFrom(sub_msg)
         msg = common_msg.SerializeToString()
         return msg
+
+    def sync_graph(self):
+        thread = Thread(target=self._sync_graph)
+        thread.setDaemon(True)
+        thread.start()
+
+    def _sync_graph(self):
+        time.sleep(params.SYNC_GRAPH_DELAY)
+
+        self.logger.info(
+            f'Requesting for graph sync...')
+
+        if self.is_light_client:
+            return
+
+        request_sync_msg = messages_pb2.RequestSyncGraph()
+        request_sync_msg.address = self.host
+        request_sync_msg.port = self.port
+        request_sync_msg.pubkey = self.keypair.pubkey.to_string().hex()
+
+        msg = MessageClient.create_message(
+            messages_pb2.REQUEST_SYNC_GRAPH_MESSAGE, request_sync_msg)
+
+        peers = set(self.peers)
+        responses = []
+
+        for peer in peers:
+            response = self.send_message(peer, msg)
+            responses.append(response)
+
+        largest_txns_size = 0
+        largest_sync_graph = None
+
+        for response in responses:
+            common_msg = messages_pb2.CommonMessage()
+            common_msg.ParseFromString(response)
+            sync_graph = messages_pb2.SyncGraph()
+            sync_graph.CopyFrom(common_msg.sync_graph)
+
+            transactions_size = len(sync_graph.transactions)
+            if transactions_size > largest_txns_size:
+                largest_txns_size = transactions_size
+                largest_sync_graph = sync_graph
+
+        # if the queried SyncGraph comes back larger than
+        # own current state, just ignore because
+        # current node has the most updated state
+        my_transactions_size = len(self.dag.transactions.keys())
+
+        if largest_sync_graph:
+            self.bootstrap_graph(largest_sync_graph)
+            self.logger.info(
+                f'Synced graph with {largest_txns_size} transactions')
+        else:
+            self.logger.info(
+                'Aborted sync graph because current node has most updated state')
+
+    def bootstrap_graph(self, sync_graph_msg):
+        transactions = {}
+        for txn in sync_graph_msg.transactions:
+            transactions[txn.hash] = txn
+
+        with self.dag.lock:
+            self.dag.transactions.update(transactions)
+
+            for conflict_set in sync_graph_msg.conflicts:
+                self.dag.conflicts.add_conflict(*conflict_set.hashes)
+
+            for conflict_set in sync_graph_msg.conflicts:
+                first_txn = conflict_set.hashes[0]
+                self.dag.decide_on_preference(first_txn)
 
     def start_query_worker(self):
         if not self.is_light_client:
@@ -210,7 +286,14 @@ class MessageClient:
         # self.logger.debug(f'Connecting to {addr}:{port}')
         s.connect((addr, port))
         s.sendall(msg)
-        data = s.recv(1024)
+
+        data = b''
+        while True:
+            chunk = s.recv(1024)
+            if not chunk:
+                break
+            data += chunk
+
         simulate_network_latency()
         return data
 
