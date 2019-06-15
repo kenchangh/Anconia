@@ -234,11 +234,12 @@ class MessageClient:
             with self.dag.lock:
                 if strongly_preferred_count >= query_success_threshold:
                     short_txn_hash = txn_msg.hash[:20]
-                    self.logger.info(f'Added chit to {short_txn_hash}...')
+                    self.logger.info(f'Added chit to {short_txn_hash}')
                     self.dag.transactions[txn_msg.hash].chit = True
                     consecutive_count += 1
                 else:
-                    self.logger.info(f'Reverted chit of {short_txn_hash}...')
+                    self.logger.info(
+                        f'Reverted chit of {short_txn_hash} with {strongly_preferred_count} strongly-preferred responses')
                     self.dag.transactions[txn_msg.hash].chit = False
                     consecutive_count = 0
 
