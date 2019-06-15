@@ -15,6 +15,8 @@ function cleanup {
 trap cleanup EXIT
 
 python3 main.py --analytics True --host 127.0.0.1 --port $port &
+sleep 3
+# python3 main.py --host 127.0.0.1 --port $port &
 ((port++))
 
 for i in `seq 1 $max`

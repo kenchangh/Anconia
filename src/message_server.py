@@ -100,7 +100,7 @@ class MessageServer:
             traceback.print_exc()
 
     def handle_transaction(self, txn_msg):
-        self.logger.info('Received transaction')
+        # self.logger.info('Received transaction')
         valid_txn = self.message_client.verify_transaction(txn_msg)
         if not valid_txn:
             self.logger.error(

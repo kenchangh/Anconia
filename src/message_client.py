@@ -3,8 +3,9 @@ import time
 import math
 import logging
 import random
+from concurrent.futures import ThreadPoolExecutor
 from hashlib import sha256
-from threading import Lock
+from threading import Lock, Thread
 from proto import messages_pb2
 from common import exponential_backoff, simulate_network_latency
 from utils import read_genesis_state
@@ -38,6 +39,8 @@ class MessageClient:
         self.is_light_client = light_client
         self.lock = Lock()
 
+        self.start_query_worker()
+        self.thread_executor = ThreadPoolExecutor(max_workers=4)
         self.analytics_enabled = analytics
         self.analytics_doc_id = None
 
@@ -67,56 +70,101 @@ class MessageClient:
         msg = common_msg.SerializeToString()
         return msg
 
-    def query_txn(self, txn_msg):
-        query_nodes = []
-        query_success_threshold = math.floor(
-            params.ALPHA_PARAM * params.NETWORK_SAMPLE_SIZE)
-        strongly_preferred_count = 0
-        short_txn_hash = txn_msg.hash[:20]
+    def start_query_worker(self):
+        if not self.is_light_client:
+            thread = Thread(target=self.query_loop)
+            thread.setDaemon(True)
+            thread.start()
 
+    def query_loop(self):
+        accepted = set([])
+        while True:
+            txn_hashes = tuple(self.dag.transactions.keys())
+            for txn_hash in txn_hashes:
+                txn = self.dag.transactions[txn_hash]
+                if not txn.queried:
+                    self.thread_executor.submit(self.query_txn, txn)
+                if not txn.accepted:
+                    self.dag.update_accepted(txn)
+
+                if txn.accepted:
+                    print(f'Updated accepted set {accepted}')
+                    accepted.add(txn.hash)
+
+    def select_network_sample(self):
         with self.lock:
+            query_nodes = []
             if len(self.peers) < params.NETWORK_SAMPLE_SIZE:
                 query_nodes = list(self.peers)
             else:
                 query_nodes = random.sample(
                     self.peers, params.NETWORK_SAMPLE_SIZE)
+            return query_nodes
 
-        start_time = time.time()
-        end_by_time = start_time + params.QUERY_TIMEOUT
+    def query_txn(self, txn_msg):
+        query_nodes = []
+        query_success_threshold = math.floor(
+            params.ALPHA_PARAM * params.NETWORK_SAMPLE_SIZE)
+        consecutive_count = 0
+        iterations = 0
+        short_txn_hash = txn_msg.hash[:20]
 
-        for node in query_nodes:
-            # exceeded QUERY_TIMEOUT
-            if time.time() >= end_by_time:
-                self.logger.debug(f'Timeout for query of {short_txn_hash}...')
-                break
-            node_query = messages_pb2.NodeQuery()
-            node_query.txn_hash = txn_msg.hash
-            is_strongly_preferred = self.dag.is_strongly_preferred(txn_msg)
-            node_query.is_strongly_preferred = is_strongly_preferred
-            msg = MessageClient.create_message(
-                messages_pb2.NODE_QUERY_MESSAGE, node_query)
+        while consecutive_count < params.BETA_CONSECUTIVE_PARAM:
+            if iterations >= params.MAX_QUERY_ITERATIONS:
+                raise RuntimeError(
+                    f'Query iterations exceeded {params.MAX_QUERY_ITERATIONS}')
 
-            response = self.send_message(node, msg)
-            if not response:
-                continue
+            strongly_preferred_count = 0
+            query_nodes = self.select_network_sample()
 
-            query_response = MessageClient.get_sub_message(
-                messages_pb2.NODE_QUERY_MESSAGE, response)
-            if query_response.txn_hash != txn_msg.hash:
-                self.logger.error(
-                    f"Invalid txn_hash from query response: {short_txn_hash}...")
-                continue
+            start_time = time.time()
+            end_by_time = start_time + params.QUERY_TIMEOUT
 
-            strongly_preferred_count += query_response.is_strongly_preferred
+            for node in query_nodes:
+                # exceeded QUERY_TIMEOUT
+                if time.time() >= end_by_time:
+                    self.logger.debug(
+                        f'Timeout for query of {short_txn_hash}...')
+                    break
+                node_query = messages_pb2.NodeQuery()
+                node_query.txn_hash = txn_msg.hash
+                is_strongly_preferred = self.dag.is_strongly_preferred(txn_msg)
+                node_query.is_strongly_preferred = is_strongly_preferred
+                msg = MessageClient.create_message(
+                    messages_pb2.NODE_QUERY_MESSAGE, node_query)
 
-        self.logger.info(
-            f'Received {strongly_preferred_count} strongly-preferred responses')
+                response = self.send_message(node, msg)
+                if not response:
+                    continue
 
-        if strongly_preferred_count >= query_success_threshold:
+                query_response = MessageClient.get_sub_message(
+                    messages_pb2.NODE_QUERY_MESSAGE, response)
+                if query_response.txn_hash != txn_msg.hash:
+                    self.logger.error(
+                        f"Invalid txn_hash from query response: {short_txn_hash}...")
+                    continue
+
+                strongly_preferred_count += query_response.is_strongly_preferred
+
+            # self.logger.info(
+            #     f'Received {strongly_preferred_count} strongly-preferred responses for {short_txn_hash}')
+
             with self.dag.lock:
-                short_txn_hash = txn_msg.hash[:20]
-                self.logger.info(f'Added chit to {short_txn_hash}...')
-                self.dag.transactions[txn_msg.hash].chit = True
+                if strongly_preferred_count >= query_success_threshold:
+                    short_txn_hash = txn_msg.hash[:20]
+                    self.logger.info(f'Added chit to {short_txn_hash}...')
+                    self.dag.transactions[txn_msg.hash].chit = True
+                    consecutive_count += 1
+                else:
+                    self.dag.transactions[txn_msg.hash].chit = False
+                    consecutive_count = 0
+
+            time.sleep(params.TIME_BETWEEN_QUERIES)
+
+        with self.dag.lock:
+            self.logger.info(
+                f'Query for transaction {txn_msg.hash[:10]}...{txn_msg.hash[-10:]} complete')
+            self.dag.transactions[txn_msg.hash].queried = True
 
     def add_peer(self, new_peer):
         addr, port = new_peer
@@ -159,17 +207,28 @@ class MessageClient:
         return data
 
     def receive_transaction(self, txn_msg):
+        # print('Graph status', self.dag.analyze_graph())
+
         # dont accept or query transactions that have work done before
-        queried = False
-        with self.dag.lock:
-            existing_txn = self.dag.transactions.get(txn_msg.hash)
-            if not existing_txn:
+        existing_txn = self.dag.transactions.get(txn_msg.hash)
+        if not existing_txn:
+            with self.dag.lock:
                 self.dag.receive_transaction(txn_msg)
-            else:
-                queried = existing_txn.queried
-        if not queried:
-            self.query_txn(txn_msg)
-            self.dag.transactions[txn_msg.hash].queried = True
+
+        if self.analytics_enabled:
+            is_preferred = False
+
+            with self.dag.lock:
+                conflict_set = set(
+                    self.dag.conflicts.get_conflict(txn_msg.hash))
+                if conflict_set:
+                    is_preferred = self.dag.conflicts.is_preferred(
+                        txn_msg.hash)
+                    conflict_set.remove(txn_msg.hash)  # remove self
+
+            analytics.set_transaction(
+                self.analytics_doc_id, txn_msg, list(conflict_set), is_preferred)
+            self.logger.info(f'Added txn {txn_msg.hash[:20]}... to analytics')
 
     def broadcast_message(self, msg):
         responses = []

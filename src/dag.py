@@ -79,27 +79,29 @@ class DAG:
 
     def check_for_conflict(self, incoming_txn):
         conflict = set([])
+
         for txn_hash in self.transactions:
             txn = self.transactions[txn_hash]
             if txn.sender == incoming_txn.sender and txn.nonce == incoming_txn.nonce:
-                updated_conflict = set([])
-                updated_conflict = self.conflicts.add_conflict(
+                self.conflicts.add_conflict(
                     incoming_txn.hash, txn.hash)
-                return updated_conflict
+                preferred = self.decide_on_preference(incoming_txn.hash)
+                # print(
+                #     f'Conflict exists! ({txn.hash[:20]}, {incoming_txn.hash[:20]})')
+                # print(f'Preferred txn {preferred[:20]}')
         return conflict
 
     def receive_transaction(self, incoming_txn):
-        with self.lock:
-            if not self.transactions.get(incoming_txn.hash):
-                self.check_for_conflict(incoming_txn)
-                parents = self.select_parents(incoming_txn)
-                incoming_txn.parents.extend(parents)
-                for parent in parents:
-                    self.transactions[parent].children.append(
-                        incoming_txn.hash)
+        if not self.transactions.get(incoming_txn.hash):
+            self.check_for_conflict(incoming_txn)
+            parents = self.select_parents(incoming_txn)
+            incoming_txn.parents.extend(parents)
+            for parent in parents:
+                self.transactions[parent].children.append(
+                    incoming_txn.hash)
 
-                incoming_txn.chit = False
-                self.transactions[incoming_txn.hash] = incoming_txn
+            incoming_txn.chit = False
+            self.transactions[incoming_txn.hash] = incoming_txn
 
     def select_parents(self, incoming_txn):
         # to select a parent, we select a transaction
@@ -116,10 +118,13 @@ class DAG:
                 break
             txn = self.transactions[txn_hash]
             # if self.is_strongly_preferred(txn):
-            n_conflicts = len(self.conflicts.get_conflict(txn_hash))
-            confidence = self.confidence(txn)
-            if confidence > 0 or n_conflicts == 0:
-                eligible_parents.append(txn_hash)
+            # n_conflicts = len(self.conflicts.get_conflict(txn_hash))
+
+            if self.is_strongly_preferred(txn):
+                progeny_has_conflict = self.progeny_has_conflict(txn)
+                confidence = self.confidence(txn)
+                if confidence > 0 or not progeny_has_conflict:
+                    eligible_parents.append(txn_hash)
 
         return eligible_parents
 
@@ -142,6 +147,46 @@ class DAG:
                     visited[child] = True
         return confidence
 
+    def decide_on_preference(self, txn_hash):
+        # sorting the conflict set ensures that all nodes
+        # converge on the same order for preferring certain transactions
+        # in the event of transactions having the same confidence
+        conflict_set = sorted(list(self.conflicts.get_conflict(txn_hash)))
+        confidences = []
+
+        for conflict_hash in conflict_set:
+            txn = self.transactions.get(conflict_hash)
+            # if txn does not exist, we should request it with MessageClient
+            # but we leave that for another day
+            if not txn:
+                continue
+            confidence = self.confidence(txn)
+            confidences.append(confidence)
+        txn_index = confidences.index(max(confidences))
+        preferred = conflict_set[txn_index]
+
+        self.conflicts.set_preferred(preferred)
+        return preferred
+
+    def progeny_has_conflict(self, txn):
+        visited = {}
+        queue = []
+        queue.append(txn.hash)
+        visited[txn.hash] = True
+
+        while queue:
+            txn_hash = queue.pop(0)
+            txn = self.transactions[txn_hash]
+            conflicts = self.conflicts.get_conflict(txn_hash)
+            if conflicts:
+                return True
+
+            for child in txn.children:
+                if not visited.get(child):
+                    queue.append(child)
+                    visited[child] = True
+        return False
+
     def is_strongly_preferred(self, txn):
         visited = {}
         queue = []
@@ -150,7 +195,7 @@ class DAG:
 
         while queue:
             txn_hash = queue.pop(0)
-            conflict_set = list(self.conflicts.get_conflict(txn_hash))
+            conflict_set = self.conflicts.get_conflict(txn_hash)
 
             # if there is no current preference the conflict set of txn_hash,
             # decide with the transaction that has the highest confidence
@@ -159,18 +204,7 @@ class DAG:
                 preferred = self.conflicts.get_preferred(txn_hash)
 
                 if preferred is None:
-                    confidences = []
-                    for conflict_hash in conflict_set:
-                        txn = self.transactions.get(conflict_hash)
-                        # if txn does not exist, we should request it with MessageClient
-                        # but we leave that for another day
-                        if not txn:
-                            continue
-                        confidence = self.confidence(txn)
-                        confidences.append(confidence)
-                    txn_index = confidences.index(max(confidences))
-                    preferred = conflict_set[txn_index]
-
+                    self.decide_on_preference(txn_hash)
                 elif preferred != txn_hash:
                     return False
 
@@ -180,3 +214,73 @@ class DAG:
                     queue.append(parent)
                     visited[parent] = True
         return True
+
+    def update_accepted(self, txn):
+        # check the ancestor of the txn if
+        # it has enough confidence
+        visited = {}
+        queue = []
+        queue.append(txn.hash)
+        visited[txn.hash] = True
+
+        while queue:
+            txn_hash = queue.pop(0)
+            txn = self.transactions[txn_hash]
+
+            if txn.queried:
+                if not txn.accepted:
+                    confidence = self.confidence(txn)
+                    if confidence > params.BETA_CONFIDENCE_PARAM:
+                        with self.lock:
+                            txn.accepted = True
+                    else:
+                        return False
+            else:
+                return False
+
+            parents = txn.parents
+            for parent in parents:
+                if not visited.get(parent):
+                    queue.append(parent)
+                    visited[parent] = True
+        return True
+
+    def analyze_graph(self):
+        keys = self.transactions.keys()
+        if not keys:
+            return (0, 0)
+
+        first_key = list(keys)[0]
+        txn = self.transactions[first_key]
+        max_depth = 0
+        max_breadth = 0
+
+        for txn_hash in self.transactions:
+            txn = self.transactions[txn_hash]
+            if len(txn.parents) == 0:
+                max_breadth += 1
+
+        visited = {}
+        queue = []
+        depth_queue = []
+        queue.append(txn.hash)
+        depth_queue.append(0)
+        visited[txn.hash] = True
+
+        while queue:
+            txn_hash = queue.pop(0)
+            depth = depth_queue.pop(0)
+            txn = self.transactions[txn_hash]
+            children = txn.children
+
+            for child in children:
+                if not visited.get(child):
+                    depth_queue.append(depth+1)
+                    queue.append(child)
+                    visited[child] = True
+
+            if depth_queue:
+                if max(depth_queue) > max_depth:
+                    max_depth = depth
+
+        return max_breadth, max_depth, len(keys)
