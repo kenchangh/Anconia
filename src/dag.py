@@ -215,6 +215,36 @@ class DAG:
                     visited[parent] = True
         return True
 
+    def update_accepted(self, txn):
+        # check the ancestor of the txn if
+        # it has enough confidence
+        visited = {}
+        queue = []
+        queue.append(txn.hash)
+        visited[txn.hash] = True
+
+        while queue:
+            txn_hash = queue.pop(0)
+            txn = self.transactions[txn_hash]
+
+            if txn.queried:
+                if not txn.accepted:
+                    confidence = self.confidence(txn)
+                    if confidence > params.BETA_CONFIDENCE_PARAM:
+                        with self.lock:
+                            txn.accepted = True
+                    else:
+                        return False
+            else:
+                return False
+
+            parents = txn.parents
+            for parent in parents:
+                if not visited.get(parent):
+                    queue.append(parent)
+                    visited[parent] = True
+        return True
+
     def analyze_graph(self):
         keys = self.transactions.keys()
         if not keys:

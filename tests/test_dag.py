@@ -4,6 +4,7 @@ import pytest
 from src.crypto import Keypair
 from src.message_client import MessageClient
 from src.dag import ConflictSet, DAG
+from src import params
 
 
 def test_conflict_set():
@@ -179,3 +180,22 @@ def test_dag_progeny_has_conflict():
 
         for parent in dag.transactions[conflict_msg.hash].parents:
             assert dag.progeny_has_conflict(dag.transactions[parent])
+
+
+def test_dag_is_accepted():
+    dag = DAG()
+    client = MessageClient(light_client=True)
+    recipient = Keypair()
+    entries = 10
+    messages = []
+
+    for _ in range(entries):
+        msg = client.generate_txn_object(recipient.address, 100)
+        dag.receive_transaction(msg)
+        dag.transactions[msg.hash].chit = True
+        dag.transactions[msg.hash].queried = True
+        messages.append(msg)
+
+    for msg in messages:
+        if dag.confidence(msg) > params.BETA_CONFIDENCE_PARAM:
+            assert dag.update_accepted(msg)

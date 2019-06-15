@@ -37,6 +37,7 @@ message Transaction {
   required string sender_pubkey = 10;
   optional bool chit = 11;
   optional bool queried = 12;
+  optional bool accepted = 13;
 }
 
 message Join {
