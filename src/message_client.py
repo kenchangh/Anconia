@@ -274,7 +274,8 @@ class MessageClient:
         # however, the send_message could also originate from the client apps
         if isinstance(result, Exception):
             if not self.is_light_client:
-                self.peers.remove(node)
+                if node in self.peers:
+                    self.peers.remove(node)
             addr, port = node
             self.logger.debug(
                 f'Removed peer {addr}:{port} due to inability to respond')
@@ -363,10 +364,14 @@ class MessageClient:
 
     def broadcast_message(self, msg):
         responses = []
-        peers = set(self.peers)
+        peers = list(self.peers)
+        if len(peers) > params.MAX_BROADCAST_PEERS:
+            peers = random.sample(peers, params.MAX_BROADCAST_PEERS)
+
         for addr, port in peers:
             node = (addr, port)
-            self.send_message(node, msg)
+            self.thread_executor.submit(self.send_message, node, msg)
+            # self.send_message(node, msg)
         if peers:
             self.logger.info('Broadcasted transaction')
         else:
