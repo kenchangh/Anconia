@@ -342,6 +342,10 @@ class MessageClient:
             with self.dag.lock:
                 self.dag.receive_transaction(txn_msg)
 
+                first_level_breadth, max_depth, txn_len = self.dag.analyze_graph()
+                self.logger.info(
+                    f'Graph status (FirstLevelBreadth: {first_level_breadth}, MaxDepth: {max_depth}, TxnLen: {txn_len})')
+
         if self.analytics_enabled:
             is_preferred = False
 

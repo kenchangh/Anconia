@@ -124,6 +124,7 @@ class DAG:
                 progeny_has_conflict = self.progeny_has_conflict(txn)
                 confidence = self.confidence(txn)
                 if confidence > 0 or not progeny_has_conflict:
+                    # if not progeny_has_conflict:
                     eligible_parents.append(txn_hash)
 
         return eligible_parents
@@ -246,41 +247,47 @@ class DAG:
         return True
 
     def analyze_graph(self):
-        keys = self.transactions.keys()
-        if not keys:
-            return (0, 0)
-
-        first_key = list(keys)[0]
-        txn = self.transactions[first_key]
         max_depth = 0
         max_breadth = 0
+        keys = self.transactions.keys()
+        genesis_nodes = []
 
-        for txn_hash in self.transactions:
+        for txn_hash in keys:
             txn = self.transactions[txn_hash]
             if len(txn.parents) == 0:
                 max_breadth += 1
+                genesis_nodes.append(txn_hash)
 
-        visited = {}
-        queue = []
-        depth_queue = []
-        queue.append(txn.hash)
-        depth_queue.append(0)
-        visited[txn.hash] = True
-
-        while queue:
-            txn_hash = queue.pop(0)
-            depth = depth_queue.pop(0)
-            txn = self.transactions[txn_hash]
-            children = txn.children
-
-            for child in children:
-                if not visited.get(child):
-                    depth_queue.append(depth+1)
-                    queue.append(child)
-                    visited[child] = True
-
-            if depth_queue:
-                if max(depth_queue) > max_depth:
-                    max_depth = depth
-
+        max_depths = [self.DFS(node) for node in genesis_nodes]
+        max_depth = max(max_depths)
         return max_breadth, max_depth, len(keys)
+
+    def DFS(self, s):
+        visited = {}
+        stack = []
+        stack.append(s)
+        max_depth = 0
+
+        while len(stack):
+            if len(stack) > max_depth:
+                max_depth = len(stack)
+
+            # Pop a vertex from stack and print it
+            s = stack[-1]
+            stack.pop()
+
+            # Stack may contain same vertex twice. So
+            # we need to print the popped item only
+            # if it is not visited.
+            if not visited.get(s):
+                visited[s] = True
+
+            # Get all adjacent vertices of the popped vertex s
+            # If a adjacent has not been visited, then puah it
+            # to the stack.
+            children = self.transactions[s].children
+            for node in children:
+                if not visited.get(node):
+                    stack.append(node)
+
+        return max_depth
