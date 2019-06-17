@@ -45,41 +45,6 @@ class MessageServer:
         app.run(host=self.address, port=self.port)
         return self.address, self.port
 
-        # try:
-        #     address, port = self.bind_to_open_port()
-        #     self.listen_to_messages(self.sock)
-        # except (KeyboardInterrupt, SystemExit):
-        #     self.thread_executor.shutdown(wait=False)
-        #     sys.exit()
-
-    def start_connection_thread(self, conn):
-        try:
-            # raw_msg = exponential_backoff(
-            #     self.logger, conn.recv,
-            #     (1024,), timeout=0.01, max_retry=5)
-            raw_msg = conn.recv(1024)
-            if raw_msg:
-                response = self.handle_message(raw_msg)
-                if response:
-                    # exponential_backoff(
-                    #     self.logger, conn.sendall,
-                    #     (response,), timeout=0.01, max_retry=5)
-                    conn.sendall(response)
-                    simulate_network_latency()
-            conn.close()
-        except socket.error:
-            # self.logger.error(e)
-            # traceback.print_exc()
-            pass
-
-    def listen_to_messages(self, sock):
-        address, port = sock.getsockname()
-        self.logger.info(f'Listening to messages on {address}:{port}')
-        while True:
-            conn, _ = sock.accept()
-            self.thread_executor.submit(self.start_connection_thread, conn)
-        sock.close()
-
     def handle_message(self, request):
         raw_msg = request.body
         try:

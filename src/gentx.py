@@ -19,7 +19,7 @@ def _create_random_transactions(message_client):
 
     while True:
         messages = []
-        for _ in range(10):
+        for _ in range(100):
             recipient_addr = random.choice(
                 message_client.state.get_all_addresses())
             msg_obj = message_client.generate_txn_object(recipient_addr, 100)
@@ -30,7 +30,7 @@ def _create_random_transactions(message_client):
         for msg in messages:
             # thread_pool.submit(message_client.broadcast_message, msg)
             message_client.broadcast_message(msg)
-        time.sleep(params.RANDOM_TX_GENERATION)
+        # time.sleep(params.RANDOM_TX_GENERATION)
 
         # conflict_msg_obj = message_client.generate_conflicting_txn(
         #     msg_obj, attacker.address, 100)
