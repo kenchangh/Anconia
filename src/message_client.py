@@ -23,6 +23,7 @@ ATTR_NAMES = {
     messages_pb2.TRANSACTION_MESSAGE: 'transaction',
     messages_pb2.SYNC_GRAPH_MESSAGE: 'sync_graph',
     messages_pb2.REQUEST_SYNC_GRAPH_MESSAGE: 'request_sync_graph',
+    messages_pb2.BATCH_TRANSACTIONS_MESSAGE: 'batch_transactions',
 }
 
 
@@ -45,8 +46,12 @@ class MessageClient:
         self.is_light_client = light_client
         self.lock = Lock()
 
+        self.broadcast_executor = ThreadPoolExecutor(max_workers=8)
+        self.tx_executor = ThreadPoolExecutor(max_workers=8)
+        self.query_executor = ThreadPoolExecutor(max_workers=4)
+
         self.start_query_worker()
-        self.thread_executor = ThreadPoolExecutor(max_workers=8)
+
         self.analytics_enabled = analytics
         self.analytics_doc_id = None
 
@@ -171,7 +176,7 @@ class MessageClient:
                 if not running:
                     if not txn.queried:
                         running_queries[txn_hash] = True
-                        self.thread_executor.submit(self.query_txn, txn)
+                        self.query_executor.submit(self.query_txn, txn)
                 if txn.queried and not txn.accepted:
                     self.dag.update_accepted(txn)
 
@@ -369,11 +374,12 @@ class MessageClient:
         existing_txn = self.dag.transactions.get(txn_msg.hash)
         if not existing_txn:
             with self.dag.lock:
-                self.dag.receive_transaction(txn_msg)
+                # self.dag.receive_transaction(txn_msg)
+                self.tx_executor.submit(self.dag.receive_transaction, txn_msg)
 
-                first_level_breadth, max_depth, txn_len = self.dag.analyze_graph()
-                self.logger.info(
-                    f'Graph status (FirstLevelBreadth: {first_level_breadth}, MaxDepth: {max_depth}, TxnLen: {txn_len})')
+                # first_level_breadth, max_depth, txn_len = self.dag.analyze_graph()
+                # self.logger.info(
+                #     f'Graph status (FirstLevelBreadth: {first_level_breadth}, MaxDepth: {max_depth}, TxnLen: {txn_len})')
 
         current_time = time.time()
 
@@ -413,7 +419,7 @@ class MessageClient:
 
         for addr, port in peers:
             node = (addr, port)
-            self.thread_executor.submit(self.send_message, node, msg)
+            self.broadcast_executor.submit(self.send_message, node, msg)
             # self.send_message(node, msg)
         if peers:
             self.logger.info('Broadcasted transaction')
@@ -447,7 +453,7 @@ class MessageClient:
         txn_msg.data = ''
         txn_msg.hash = self.generate_transaction_hash(txn_msg)
         txn_msg.sender_pubkey = self.keypair.pubkey.to_string().hex()
-        txn_msg = self.sign_transaction(txn_msg)
+        # txn_msg = self.sign_transaction(txn_msg)
         return txn_msg
 
     def generate_conflicting_txn(self, original_txn_msg, recipient, amount):

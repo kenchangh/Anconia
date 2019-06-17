@@ -21,7 +21,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
   package='messages',
   syntax='proto2',
   serialized_options=None,
-  serialized_pb=_b('\n\x0emessages.proto\x12\x08messages\"\xaa\x02\n\rCommonMessage\x12+\n\x0cmessage_type\x18\x01 \x02(\x0e\x32\x15.messages.MessageType\x12\x1e\n\x04join\x18\x02 \x01(\x0b\x32\x0e.messages.JoinH\x00\x12,\n\x0btransaction\x18\x03 \x01(\x0b\x32\x15.messages.TransactionH\x00\x12)\n\nnode_query\x18\x04 \x01(\x0b\x32\x13.messages.NodeQueryH\x00\x12)\n\nsync_graph\x18\x05 \x01(\x0b\x32\x13.messages.SyncGraphH\x00\x12\x38\n\x12request_sync_graph\x18\x06 \x01(\x0b\x32\x1a.messages.RequestSyncGraphH\x00\x42\x0e\n\x0cmessage_body\"e\n\tNodeQuery\x12\x10\n\x08txn_hash\x18\x01 \x02(\t\x12\x1d\n\x15is_strongly_preferred\x18\x02 \x02(\x08\x12\x14\n\x0c\x66rom_address\x18\x03 \x02(\t\x12\x11\n\tfrom_port\x18\x04 \x02(\r\"\x1d\n\x0b\x43onflictSet\x12\x0e\n\x06hashes\x18\x01 \x03(\t\"\xe9\x01\n\x0bTransaction\x12\x0e\n\x06sender\x18\x01 \x02(\t\x12\x11\n\trecipient\x18\x02 \x02(\t\x12\r\n\x05nonce\x18\x03 \x02(\x04\x12\x0e\n\x06\x61mount\x18\x04 \x02(\x04\x12\x0c\n\x04\x64\x61ta\x18\x05 \x02(\t\x12\x0c\n\x04hash\x18\x06 \x02(\t\x12\x0f\n\x07parents\x18\x07 \x03(\t\x12\x10\n\x08\x63hildren\x18\x08 \x03(\t\x12\x11\n\tsignature\x18\t \x01(\t\x12\x15\n\rsender_pubkey\x18\n \x02(\t\x12\x0c\n\x04\x63hit\x18\x0b \x01(\x08\x12\x0f\n\x07queried\x18\x0c \x01(\x08\x12\x10\n\x08\x61\x63\x63\x65pted\x18\r \x01(\x08\"b\n\tSyncGraph\x12+\n\x0ctransactions\x18\x01 \x03(\x0b\x32\x15.messages.Transaction\x12(\n\tconflicts\x18\x02 \x03(\x0b\x32\x15.messages.ConflictSet\"Z\n\x10RequestSyncGraph\x12\x0f\n\x07\x61\x64\x64ress\x18\x01 \x02(\t\x12\x0c\n\x04port\x18\x02 \x02(\x05\x12\x0e\n\x06pubkey\x18\x03 \x02(\t\x12\x17\n\x0ftarget_txn_hash\x18\x04 \x01(\t\"\x94\x01\n\x04Join\x12\x0f\n\x07\x61\x64\x64ress\x18\x01 \x02(\t\x12\x0c\n\x04port\x18\x02 \x02(\x05\x12\x0e\n\x06pubkey\x18\x03 \x02(\t\x12\x10\n\x08nickname\x18\x04 \x01(\t\x12&\n\tjoin_type\x18\x05 \x02(\x0e\x32\x13.messages.Join.Type\"#\n\x04Type\x12\r\n\tINIT_JOIN\x10\x00\x12\x0c\n\x08\x41\x43K_JOIN\x10\x01*\x88\x01\n\x0bMessageType\x12\x10\n\x0cJOIN_MESSAGE\x10\x00\x12\x17\n\x13TRANSACTION_MESSAGE\x10\x01\x12\x16\n\x12NODE_QUERY_MESSAGE\x10\x02\x12\x16\n\x12SYNC_GRAPH_MESSAGE\x10\x03\x12\x1e\n\x1aREQUEST_SYNC_GRAPH_MESSAGE\x10\x04')
+  serialized_pb=_b('\n\x0emessages.proto\x12\x08messages\"\xe5\x02\n\rCommonMessage\x12+\n\x0cmessage_type\x18\x01 \x02(\x0e\x32\x15.messages.MessageType\x12\x1e\n\x04join\x18\x02 \x01(\x0b\x32\x0e.messages.JoinH\x00\x12,\n\x0btransaction\x18\x03 \x01(\x0b\x32\x15.messages.TransactionH\x00\x12)\n\nnode_query\x18\x04 \x01(\x0b\x32\x13.messages.NodeQueryH\x00\x12)\n\nsync_graph\x18\x05 \x01(\x0b\x32\x13.messages.SyncGraphH\x00\x12\x38\n\x12request_sync_graph\x18\x06 \x01(\x0b\x32\x1a.messages.RequestSyncGraphH\x00\x12\x39\n\x12\x62\x61tch_transactions\x18\x07 \x01(\x0b\x32\x1b.messages.BatchTransactionsH\x00\x42\x0e\n\x0cmessage_body\"e\n\tNodeQuery\x12\x10\n\x08txn_hash\x18\x01 \x02(\t\x12\x1d\n\x15is_strongly_preferred\x18\x02 \x02(\x08\x12\x14\n\x0c\x66rom_address\x18\x03 \x02(\t\x12\x11\n\tfrom_port\x18\x04 \x02(\r\"\x1d\n\x0b\x43onflictSet\x12\x0e\n\x06hashes\x18\x01 \x03(\t\"@\n\x11\x42\x61tchTransactions\x12+\n\x0ctransactions\x18\x01 \x03(\x0b\x32\x15.messages.Transaction\"\xe9\x01\n\x0bTransaction\x12\x0e\n\x06sender\x18\x01 \x02(\t\x12\x11\n\trecipient\x18\x02 \x02(\t\x12\r\n\x05nonce\x18\x03 \x02(\x04\x12\x0e\n\x06\x61mount\x18\x04 \x02(\x04\x12\x0c\n\x04\x64\x61ta\x18\x05 \x02(\t\x12\x0c\n\x04hash\x18\x06 \x02(\t\x12\x0f\n\x07parents\x18\x07 \x03(\t\x12\x10\n\x08\x63hildren\x18\x08 \x03(\t\x12\x11\n\tsignature\x18\t \x01(\t\x12\x15\n\rsender_pubkey\x18\n \x02(\t\x12\x0c\n\x04\x63hit\x18\x0b \x01(\x08\x12\x0f\n\x07queried\x18\x0c \x01(\x08\x12\x10\n\x08\x61\x63\x63\x65pted\x18\r \x01(\x08\"b\n\tSyncGraph\x12+\n\x0ctransactions\x18\x01 \x03(\x0b\x32\x15.messages.Transaction\x12(\n\tconflicts\x18\x02 \x03(\x0b\x32\x15.messages.ConflictSet\"Z\n\x10RequestSyncGraph\x12\x0f\n\x07\x61\x64\x64ress\x18\x01 \x02(\t\x12\x0c\n\x04port\x18\x02 \x02(\x05\x12\x0e\n\x06pubkey\x18\x03 \x02(\t\x12\x17\n\x0ftarget_txn_hash\x18\x04 \x01(\t\"\x94\x01\n\x04Join\x12\x0f\n\x07\x61\x64\x64ress\x18\x01 \x02(\t\x12\x0c\n\x04port\x18\x02 \x02(\x05\x12\x0e\n\x06pubkey\x18\x03 \x02(\t\x12\x10\n\x08nickname\x18\x04 \x01(\t\x12&\n\tjoin_type\x18\x05 \x02(\x0e\x32\x13.messages.Join.Type\"#\n\x04Type\x12\r\n\tINIT_JOIN\x10\x00\x12\x0c\n\x08\x41\x43K_JOIN\x10\x01*\xa8\x01\n\x0bMessageType\x12\x10\n\x0cJOIN_MESSAGE\x10\x00\x12\x17\n\x13TRANSACTION_MESSAGE\x10\x01\x12\x16\n\x12NODE_QUERY_MESSAGE\x10\x02\x12\x16\n\x12SYNC_GRAPH_MESSAGE\x10\x03\x12\x1e\n\x1aREQUEST_SYNC_GRAPH_MESSAGE\x10\x04\x12\x1e\n\x1a\x42\x41TCH_TRANSACTIONS_MESSAGE\x10\x05')
 )
 
 _MESSAGETYPE = _descriptor.EnumDescriptor(
@@ -50,11 +50,15 @@ _MESSAGETYPE = _descriptor.EnumDescriptor(
       name='REQUEST_SYNC_GRAPH_MESSAGE', index=4, number=4,
       serialized_options=None,
       type=None),
+    _descriptor.EnumValueDescriptor(
+      name='BATCH_TRANSACTIONS_MESSAGE', index=5, number=5,
+      serialized_options=None,
+      type=None),
   ],
   containing_type=None,
   serialized_options=None,
-  serialized_start=1043,
-  serialized_end=1179,
+  serialized_start=1168,
+  serialized_end=1336,
 )
 _sym_db.RegisterEnumDescriptor(_MESSAGETYPE)
 
@@ -64,6 +68,7 @@ TRANSACTION_MESSAGE = 1
 NODE_QUERY_MESSAGE = 2
 SYNC_GRAPH_MESSAGE = 3
 REQUEST_SYNC_GRAPH_MESSAGE = 4
+BATCH_TRANSACTIONS_MESSAGE = 5
 
 
 _JOIN_TYPE = _descriptor.EnumDescriptor(
@@ -83,8 +88,8 @@ _JOIN_TYPE = _descriptor.EnumDescriptor(
   ],
   containing_type=None,
   serialized_options=None,
-  serialized_start=1005,
-  serialized_end=1040,
+  serialized_start=1130,
+  serialized_end=1165,
 )
 _sym_db.RegisterEnumDescriptor(_JOIN_TYPE)
 
@@ -138,6 +143,13 @@ _COMMONMESSAGE = _descriptor.Descriptor(
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='batch_transactions', full_name='messages.CommonMessage.batch_transactions', index=6,
+      number=7, type=11, cpp_type=10, label=1,
+      has_default_value=False, default_value=None,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
   ],
   extensions=[
   ],
@@ -154,7 +166,7 @@ _COMMONMESSAGE = _descriptor.Descriptor(
       index=0, containing_type=None, fields=[]),
   ],
   serialized_start=29,
-  serialized_end=327,
+  serialized_end=386,
 )
 
 
@@ -205,8 +217,8 @@ _NODEQUERY = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=329,
-  serialized_end=430,
+  serialized_start=388,
+  serialized_end=489,
 )
 
 
@@ -236,8 +248,39 @@ _CONFLICTSET = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=432,
-  serialized_end=461,
+  serialized_start=491,
+  serialized_end=520,
+)
+
+
+_BATCHTRANSACTIONS = _descriptor.Descriptor(
+  name='BatchTransactions',
+  full_name='messages.BatchTransactions',
+  filename=None,
+  file=DESCRIPTOR,
+  containing_type=None,
+  fields=[
+    _descriptor.FieldDescriptor(
+      name='transactions', full_name='messages.BatchTransactions.transactions', index=0,
+      number=1, type=11, cpp_type=10, label=3,
+      has_default_value=False, default_value=[],
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
+  ],
+  extensions=[
+  ],
+  nested_types=[],
+  enum_types=[
+  ],
+  serialized_options=None,
+  is_extendable=False,
+  syntax='proto2',
+  extension_ranges=[],
+  oneofs=[
+  ],
+  serialized_start=522,
+  serialized_end=586,
 )
 
 
@@ -351,8 +394,8 @@ _TRANSACTION = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=464,
-  serialized_end=697,
+  serialized_start=589,
+  serialized_end=822,
 )
 
 
@@ -389,8 +432,8 @@ _SYNCGRAPH = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=699,
-  serialized_end=797,
+  serialized_start=824,
+  serialized_end=922,
 )
 
 
@@ -441,8 +484,8 @@ _REQUESTSYNCGRAPH = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=799,
-  serialized_end=889,
+  serialized_start=924,
+  serialized_end=1014,
 )
 
 
@@ -501,8 +544,8 @@ _JOIN = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=892,
-  serialized_end=1040,
+  serialized_start=1017,
+  serialized_end=1165,
 )
 
 _COMMONMESSAGE.fields_by_name['message_type'].enum_type = _MESSAGETYPE
@@ -511,6 +554,7 @@ _COMMONMESSAGE.fields_by_name['transaction'].message_type = _TRANSACTION
 _COMMONMESSAGE.fields_by_name['node_query'].message_type = _NODEQUERY
 _COMMONMESSAGE.fields_by_name['sync_graph'].message_type = _SYNCGRAPH
 _COMMONMESSAGE.fields_by_name['request_sync_graph'].message_type = _REQUESTSYNCGRAPH
+_COMMONMESSAGE.fields_by_name['batch_transactions'].message_type = _BATCHTRANSACTIONS
 _COMMONMESSAGE.oneofs_by_name['message_body'].fields.append(
   _COMMONMESSAGE.fields_by_name['join'])
 _COMMONMESSAGE.fields_by_name['join'].containing_oneof = _COMMONMESSAGE.oneofs_by_name['message_body']
@@ -526,6 +570,10 @@ _COMMONMESSAGE.fields_by_name['sync_graph'].containing_oneof = _COMMONMESSAGE.on
 _COMMONMESSAGE.oneofs_by_name['message_body'].fields.append(
   _COMMONMESSAGE.fields_by_name['request_sync_graph'])
 _COMMONMESSAGE.fields_by_name['request_sync_graph'].containing_oneof = _COMMONMESSAGE.oneofs_by_name['message_body']
+_COMMONMESSAGE.oneofs_by_name['message_body'].fields.append(
+  _COMMONMESSAGE.fields_by_name['batch_transactions'])
+_COMMONMESSAGE.fields_by_name['batch_transactions'].containing_oneof = _COMMONMESSAGE.oneofs_by_name['message_body']
+_BATCHTRANSACTIONS.fields_by_name['transactions'].message_type = _TRANSACTION
 _SYNCGRAPH.fields_by_name['transactions'].message_type = _TRANSACTION
 _SYNCGRAPH.fields_by_name['conflicts'].message_type = _CONFLICTSET
 _JOIN.fields_by_name['join_type'].enum_type = _JOIN_TYPE
@@ -533,6 +581,7 @@ _JOIN_TYPE.containing_type = _JOIN
 DESCRIPTOR.message_types_by_name['CommonMessage'] = _COMMONMESSAGE
 DESCRIPTOR.message_types_by_name['NodeQuery'] = _NODEQUERY
 DESCRIPTOR.message_types_by_name['ConflictSet'] = _CONFLICTSET
+DESCRIPTOR.message_types_by_name['BatchTransactions'] = _BATCHTRANSACTIONS
 DESCRIPTOR.message_types_by_name['Transaction'] = _TRANSACTION
 DESCRIPTOR.message_types_by_name['SyncGraph'] = _SYNCGRAPH
 DESCRIPTOR.message_types_by_name['RequestSyncGraph'] = _REQUESTSYNCGRAPH
@@ -560,6 +609,13 @@ ConflictSet = _reflection.GeneratedProtocolMessageType('ConflictSet', (_message.
   # @@protoc_insertion_point(class_scope:messages.ConflictSet)
   ))
 _sym_db.RegisterMessage(ConflictSet)
+
+BatchTransactions = _reflection.GeneratedProtocolMessageType('BatchTransactions', (_message.Message,), dict(
+  DESCRIPTOR = _BATCHTRANSACTIONS,
+  __module__ = 'messages_pb2'
+  # @@protoc_insertion_point(class_scope:messages.BatchTransactions)
+  ))
+_sym_db.RegisterMessage(BatchTransactions)
 
 Transaction = _reflection.GeneratedProtocolMessageType('Transaction', (_message.Message,), dict(
   DESCRIPTOR = _TRANSACTION,

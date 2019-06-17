@@ -7,6 +7,7 @@ enum MessageType {
   NODE_QUERY_MESSAGE = 2;
   SYNC_GRAPH_MESSAGE = 3;
   REQUEST_SYNC_GRAPH_MESSAGE = 4;
+  BATCH_TRANSACTIONS_MESSAGE = 5;
 }
 
 message CommonMessage {
@@ -18,6 +19,7 @@ message CommonMessage {
     NodeQuery node_query = 4;
     SyncGraph sync_graph = 5;
     RequestSyncGraph request_sync_graph = 6;
+    BatchTransactions batch_transactions = 7;
   }
 }
 
@@ -30,6 +32,10 @@ message NodeQuery {
 
 message ConflictSet {
   repeated string hashes = 1;
+}
+
+message BatchTransactions {
+  repeated Transaction transactions = 1;
 }
 
 message Transaction {

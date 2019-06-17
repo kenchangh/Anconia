@@ -58,6 +58,8 @@ class MessageServer:
                     'NodeQuery', 'node_query', self.handle_node_query),
                 messages_pb2.REQUEST_SYNC_GRAPH_MESSAGE: (
                     'RequestSyncGraph', 'request_sync_graph', self.handle_sync_graph),
+                messages_pb2.BATCH_TRANSACTIONS_MESSAGE: (
+                    'BatchTransactions', 'batch_transactions', self.handle_batch_transactions),
             }
 
             handler = message_handlers.get(common_msg.message_type)
@@ -75,6 +77,12 @@ class MessageServer:
 
     def handle_transaction(self, request, txn_msg):
         self.message_client.receive_transaction(txn_msg)
+        return request.Response(body=b'')
+
+    def handle_batch_transactions(self, request, batch_txns_msg):
+        for txn_msg in batch_txns_msg.transactions:
+            self.message_client.receive_transaction(txn_msg)
+
         return request.Response(body=b'')
 
     def handle_node_query(self, request, query_msg):
