@@ -5,7 +5,7 @@ import logging
 import random
 from concurrent.futures import ThreadPoolExecutor
 from hashlib import sha256
-from threading import Lock, Thread
+from threading import Lock, RLock, Thread
 from proto import messages_pb2
 from common import exponential_backoff, simulate_network_latency
 from utils import read_genesis_state
@@ -48,6 +48,12 @@ class MessageClient:
         self.thread_executor = ThreadPoolExecutor(max_workers=8)
         self.analytics_enabled = analytics
         self.analytics_doc_id = None
+
+        self.metrics_lock = RLock()
+        self.collect_metrics = False
+        self.metrics_start = None
+        self.metrics_end = None
+        self.transactions_count = 0
 
     @staticmethod
     def get_sub_message(message_type, message):
@@ -251,10 +257,21 @@ class MessageClient:
                 f'Query for transaction {txn_msg.hash[:10]}...{txn_msg.hash[-10:]} complete')
             self.dag.transactions[txn_msg.hash].queried = True
 
+    def start_collect_metrics(self):
+        self.collect_metrics = True
+        self.metrics_start = time.time()
+        self.metrics_end = self.metrics_start + params.METRICS_DURATION
+
     def add_peer(self, new_peer):
         addr, port = new_peer
         self.peers.add(new_peer)
         self.logger.info(f'Added new peer {addr}:{port}')
+
+        peer_len = len(self.peers)
+        metrics_not_started = not self.collect_metrics and not self.metrics_end
+
+        if peer_len == params.PEERS_COUNT - 1 and metrics_not_started:
+            self.start_collect_metrics()
 
         if self.analytics_enabled:
             if self.analytics_doc_id is None:
@@ -346,6 +363,21 @@ class MessageClient:
                 first_level_breadth, max_depth, txn_len = self.dag.analyze_graph()
                 self.logger.info(
                     f'Graph status (FirstLevelBreadth: {first_level_breadth}, MaxDepth: {max_depth}, TxnLen: {txn_len})')
+
+        current_time = time.time()
+
+        if self.collect_metrics:
+            if current_time >= self.metrics_start and current_time < self.metrics_end:
+                with self.metrics_lock:
+                    if not self.transactions_count:
+                        self.logger.info('METRICS_START')
+                    self.transactions_count += 1
+            elif current_time >= self.metrics_end:
+                with self.metrics_lock:
+                    self.collect_metrics = False
+                    tps = self.transactions_count / params.METRICS_DURATION
+                    self.logger.info(
+                        f'METRICS_END: {tps} TPS, {self.transactions_count} transactions')
 
         if self.analytics_enabled:
             is_preferred = False

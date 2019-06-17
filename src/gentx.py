@@ -19,7 +19,7 @@ def _create_random_transactions(message_client):
 
     while True:
         messages = []
-        for _ in range(100):
+        for _ in range(10):
             recipient_addr = random.choice(
                 message_client.state.get_all_addresses())
             msg_obj = message_client.generate_txn_object(recipient_addr, 100)
