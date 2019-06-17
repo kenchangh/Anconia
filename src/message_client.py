@@ -285,6 +285,7 @@ class MessageClient:
                     f'Updated analytics/nodes/{self.analytics_doc_id}')
 
     def send_message(self, node, msg):
+        start = time.time()
         result = exponential_backoff(
             self.logger, self._send_message, (node, msg))
 
@@ -298,6 +299,8 @@ class MessageClient:
             self.logger.debug(
                 f'Removed peer {addr}:{port} due to inability to respond')
             return
+        end = time.time()
+        # print(f'send_message took {end-start} seconds')
         return result
 
     # def _send_message(self, node, msg):
@@ -356,11 +359,11 @@ class MessageClient:
             return None
 
     def receive_transaction(self, txn_msg):
-        valid_txn = self.verify_transaction(txn_msg)
-        if not valid_txn:
-            self.logger.error(
-                'Invalid transaction, signature is invalid for '+str(txn_msg))
-            return
+        # valid_txn = self.verify_transaction(txn_msg)
+        # if not valid_txn:
+        #     self.logger.error(
+        #         'Invalid transaction, signature is invalid for '+str(txn_msg))
+        #     return
 
         # dont accept or query transactions that have work done before
         existing_txn = self.dag.transactions.get(txn_msg.hash)
@@ -374,7 +377,7 @@ class MessageClient:
 
         current_time = time.time()
 
-        if self.collect_metrics:
+        if self.collect_metrics and not existing_txn:
             if current_time >= self.metrics_start and current_time < self.metrics_end:
                 with self.metrics_lock:
                     if not self.transactions_count:
