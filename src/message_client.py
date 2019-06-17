@@ -41,6 +41,7 @@ class MessageClient:
         self.keypair = Keypair.from_genesis_file(read_genesis_state())
         self.dag = DAG()
         self.peers = set([])
+        self.sessions = {}
 
         self.logger = logging.getLogger('main')
         self.is_light_client = light_client
@@ -308,30 +309,17 @@ class MessageClient:
         # print(f'send_message took {end-start} seconds')
         return result
 
-    # def _send_message(self, node, msg):
-    #     addr, port = node
-    #     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    #     # self.logger.debug(f'Connecting to {addr}:{port}')
-    #     s.settimeout(params.CLIENT_SOCKET_TIMEOUT)
-    #     s.connect((addr, port))
-    #     s.settimeout(None)
-    #     s.sendall(msg)
-
-    #     data = b''
-    #     while True:
-    #         chunk = s.recv(1024)
-    #         if not chunk:
-    #             break
-    #         data += chunk
-
-    #     simulate_network_latency()
-    #     return data
-
     def _send_message(self, node, msg):
+        session = self.sessions.get(node)
+        if not session:
+            session = requests.Session()
+            session.headers.update({
+                'Content-Type': 'application/octet-stream'})
+            self.sessions[node] = session
+
         host, port = node
         uri = f'http://{host}:{port}/'
-        req = requests.post(uri, data=msg, headers={
-                            'Content-Type': 'application/octet-stream'})
+        req = session.post(uri, data=msg)
         return req.content
 
     def request_transaction(self, txn_hash, fulfiller_host, fulfiller_port):

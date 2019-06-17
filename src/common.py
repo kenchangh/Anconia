@@ -8,9 +8,10 @@ MCAST_PORT = 5007
 
 
 def simulate_network_latency():
-    delay = random.randrange(params.NETWORK_LATENCY_MIN,
-                             params.NETWORK_LATENCY_MAX) / 1000
-    time.sleep(delay)
+    # delay = random.randrange(params.NETWORK_LATENCY_MIN,
+    #                          params.NETWORK_LATENCY_MAX) / 1000
+    # time.sleep(delay)
+    pass
 
 
 def exponential_backoff(logger, function, args, timeout=1, max_retry=5, expected_exception=Exception):
