@@ -9,7 +9,7 @@ fi
 port=5000
 
 function cleanup {
-  kill $(jobs -p)
+  kill -9 $(jobs -p)
 }
 
 trap cleanup EXIT

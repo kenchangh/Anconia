@@ -7,6 +7,7 @@ import logging
 from concurrent.futures import ThreadPoolExecutor
 import socketserver
 import traceback
+from japronto import Application
 from proto import messages_pb2
 from message_client import MessageClient
 from common import exponential_backoff, simulate_network_latency
@@ -21,7 +22,7 @@ class MessageServer:
         self.address = host
         self.port = port
         self.listener_thread = None
-        self.thread_executor = ThreadPoolExecutor(max_workers=8)
+        # self.thread_executor = ThreadPoolExecutor(max_workers=8)
 
     def bind_to_open_port(self):
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -39,13 +40,17 @@ class MessageServer:
         return address, port
 
     def start(self):
-        try:
-            address, port = self.bind_to_open_port()
-            self.listen_to_messages(self.sock)
-        except (KeyboardInterrupt, SystemExit):
-            self.thread_executor.shutdown(wait=False)
-            sys.exit()
-        return address, port
+        app = Application()
+        app.router.add_route('/', self.handle_message, methods=['POST'])
+        app.run(host=self.address, port=self.port)
+        return self.address, self.port
+
+        # try:
+        #     address, port = self.bind_to_open_port()
+        #     self.listen_to_messages(self.sock)
+        # except (KeyboardInterrupt, SystemExit):
+        #     self.thread_executor.shutdown(wait=False)
+        #     sys.exit()
 
     def start_connection_thread(self, conn):
         try:
@@ -75,7 +80,8 @@ class MessageServer:
             self.thread_executor.submit(self.start_connection_thread, conn)
         sock.close()
 
-    def handle_message(self, raw_msg):
+    def handle_message(self, request):
+        raw_msg = request.body
         try:
             common_msg = messages_pb2.CommonMessage()
             common_msg.ParseFromString(raw_msg)
@@ -97,14 +103,16 @@ class MessageServer:
             message_classname, attr_name, handler_function = handler
             sub_msg = getattr(messages_pb2, message_classname)()
             sub_msg.CopyFrom(getattr(common_msg, attr_name))
-            return handler_function(sub_msg)
+            return handler_function(request, sub_msg)
         except Exception:
             traceback.print_exc()
+            return request.Response(code=500)
 
-    def handle_transaction(self, txn_msg):
+    def handle_transaction(self, request, txn_msg):
         self.message_client.receive_transaction(txn_msg)
+        return request.Response(body=b'')
 
-    def handle_node_query(self, query_msg):
+    def handle_node_query(self, request, query_msg):
         """
         If we have not encountered the transaction yet,
         Respond the query with the query's is_strongly_preferred field
@@ -143,9 +151,9 @@ class MessageServer:
         response_query.from_port = self.port
         msg = MessageClient.create_message(
             messages_pb2.NODE_QUERY_MESSAGE, response_query)
-        return msg
+        return request.Response(body=msg)
 
-    def handle_sync_graph(self, request_sync_graph_msg):
+    def handle_sync_graph(self, request, request_sync_graph_msg):
         if request_sync_graph_msg.target_txn_hash:
             sync_msg = messages_pb2.SyncGraph()
             txn = self.message_client.dag.transactions.get(
@@ -155,8 +163,8 @@ class MessageServer:
                 sync_msg.transactions.append(txn)
                 msg = MessageClient.create_message(
                     messages_pb2.SYNC_GRAPH_MESSAGE, sync_msg)
-                return msg
-            return ''
+                return request.Response(text=msg.decode('utf-8'))
+            return request.Response(body=b'')
 
         sync_msg = messages_pb2.SyncGraph()
         transactions = self.message_client.dag.transactions.values()
@@ -171,9 +179,10 @@ class MessageServer:
         msg = MessageClient.create_message(
             messages_pb2.SYNC_GRAPH_MESSAGE, sync_msg
         )
-        return msg
+        return request.Response(body=msg)
 
-    def add_peer(self, join_msg):
+    def add_peer(self, request, join_msg):
         new_peer = (join_msg.address, join_msg.port)
         with self.message_client.lock:
             self.message_client.add_peer(new_peer)
+        return request.Response(body=b'')

@@ -7,6 +7,7 @@ from threading import Thread
 import logging
 import traceback
 from concurrent.futures import ThreadPoolExecutor
+from japronto import Application
 from common import MCAST_GRP, MCAST_PORT, exponential_backoff, simulate_network_latency
 from message_client import MessageClient
 from proto import messages_pb2
@@ -19,7 +20,7 @@ class DiscoveryServer:
         self.port = port
         self.nickname = nickname
         self.message_client = message_client
-        self.thread_executor = ThreadPoolExecutor(max_workers=8)
+        self.thread_executor = ThreadPoolExecutor(max_workers=2)
 
     def start(self):
         listener_thread = Thread(target=self.listen_multicast)

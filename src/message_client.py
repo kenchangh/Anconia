@@ -14,6 +14,7 @@ from statedb import StateDB
 from dag import DAG
 import analytics
 import params
+import requests
 
 # TO BE UPDATED PERIODICALLY
 ATTR_NAMES = {
@@ -299,24 +300,31 @@ class MessageClient:
             return
         return result
 
+    # def _send_message(self, node, msg):
+    #     addr, port = node
+    #     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    #     # self.logger.debug(f'Connecting to {addr}:{port}')
+    #     s.settimeout(params.CLIENT_SOCKET_TIMEOUT)
+    #     s.connect((addr, port))
+    #     s.settimeout(None)
+    #     s.sendall(msg)
+
+    #     data = b''
+    #     while True:
+    #         chunk = s.recv(1024)
+    #         if not chunk:
+    #             break
+    #         data += chunk
+
+    #     simulate_network_latency()
+    #     return data
+
     def _send_message(self, node, msg):
-        addr, port = node
-        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        # self.logger.debug(f'Connecting to {addr}:{port}')
-        s.settimeout(params.CLIENT_SOCKET_TIMEOUT)
-        s.connect((addr, port))
-        s.settimeout(None)
-        s.sendall(msg)
-
-        data = b''
-        while True:
-            chunk = s.recv(1024)
-            if not chunk:
-                break
-            data += chunk
-
-        simulate_network_latency()
-        return data
+        host, port = node
+        uri = f'http://{host}:{port}/'
+        req = requests.post(uri, data=msg, headers={
+                            'Content-Type': 'application/octet-stream'})
+        return req.content
 
     def request_transaction(self, txn_hash, fulfiller_host, fulfiller_port):
         request_sync_msg = messages_pb2.RequestSyncGraph()
