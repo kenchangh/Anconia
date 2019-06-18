@@ -19,28 +19,22 @@ def _create_random_transactions(message_client):
 
     while True:
         batch_txns = messages_pb2.BatchTransactions()
+        entries = 100
 
-        for _ in range(100):
+        for i in range(entries/2):
             recipient_addr = random.choice(
                 message_client.state.get_all_addresses())
             msg_obj = message_client.generate_txn_object(recipient_addr, 100)
             batch_txns.transactions.append(msg_obj)
 
+        for i in range(entries/2):
+            conflict_msg_obj = message_client.generate_conflicting_txn(
+                msg_obj, attacker.address, 100)
+            batch_txns.transactions.append(conflict_msg_obj)
+
         msg = MessageClient.create_message(
             messages_pb2.BATCH_TRANSACTIONS_MESSAGE, batch_txns)
         message_client.broadcast_message(msg)
-
-        # for msg in messages:
-        #     # thread_pool.submit(message_client.broadcast_message, msg)
-        #     message_client.broadcast_message(msg)
-        # time.sleep(params.RANDOM_TX_GENERATION)
-
-        # conflict_msg_obj = message_client.generate_conflicting_txn(
-        #     msg_obj, attacker.address, 100)
-        # conflict_msg = MessageClient.create_message(
-        #     messages_pb2.TRANSACTION_MESSAGE, conflict_msg_obj)
-        # message_client.broadcast_message(conflict_msg)
-        # time.sleep(params.RANDOM_TX_GENERATION)
 
 
 def create_random_transactions(message_client):
