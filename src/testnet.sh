@@ -23,8 +23,10 @@ for i in `seq 1 $max`
 do
   printf "Running node $i\n"
   rm -f "$port.log"
-  # python3 main.py --host 127.0.0.1 --port $port > "$port.log" 2>&1 &
-  python3 main.py --host 127.0.0.1 --port $port &
+  # python3 main.py --adversarial True --host 127.0.0.1 --port $port > "$port.log" 2>&1 &
+  python3 main.py --host 127.0.0.1 --port $port > "$port.log" 2>&1 &
+  # python3 main.py --adversarial True --host 127.0.0.1 --port $port &
+  # python3 main.py --host 127.0.0.1 --port $port &
   sleep 1
   ((port++))
 done

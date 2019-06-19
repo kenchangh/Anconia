@@ -20,7 +20,8 @@ logger.propagate = False
 
 
 class Anconia:
-    def start(self, host='127.0.0.1', port=5000, analytics=False, pubkey='123', nickname='abc'):
+    def start(self, host='127.0.0.1', port=5000, analytics=False,
+              adversarial=False, pubkey='123', nickname='abc'):
         message_client = MessageClient(
             host=host, port=port, analytics=analytics)
         message_server = MessageServer(message_client, host=host, port=port)
@@ -31,7 +32,7 @@ class Anconia:
 
         message_client.sync_graph()
 
-        create_random_transactions(message_client)
+        create_random_transactions(message_client, adversarial)
         message_server.start()
 
 
@@ -45,6 +46,8 @@ if __name__ == '__main__':
         '--port', '-p', type=int, help='Starts the RPC server with this port', default=5000)
     parser.add_argument(
         '--analytics', '-a', type=bool, help='Starts the RPC server with analytics reporting', default=False)
+    parser.add_argument(
+        '--adversarial', '-z', type=bool, help='Starts the blockchain with adversarial network conditions', default=False)
     args = parser.parse_args(sys.argv[1:])
 
     if args.verbose:
@@ -53,4 +56,5 @@ if __name__ == '__main__':
         logging.basicConfig(level=logging.INFO)
 
     anconia = Anconia()
-    anconia.start(host=args.host, port=args.port, analytics=args.analytics)
+    anconia.start(host=args.host, port=args.port,
+                  analytics=args.analytics, adversarial=args.adversarial)
