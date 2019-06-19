@@ -25,15 +25,19 @@ class Anconia:
         message_client = MessageClient(
             host=host, port=port, analytics=analytics)
         message_server = MessageServer(message_client, host=host, port=port)
-
         discovery_server = DiscoveryServer(
             message_client, host, port, nickname)
-        discovery_server.start()
 
-        message_client.sync_graph()
+        try:
+            discovery_server.start()
+            message_client.sync_graph()
+            create_random_transactions(message_client, adversarial)
+            message_server.start()
 
-        create_random_transactions(message_client, adversarial)
-        message_server.start()
+        except (KeyboardInterrupt, SystemExit):
+            message_client.shutdown()
+            discovery_server.shutdown()
+            sys.exit()
 
 
 if __name__ == '__main__':

@@ -20,15 +20,20 @@ class DiscoveryServer:
         self.port = port
         self.nickname = nickname
         self.message_client = message_client
-        self.thread_executor = ThreadPoolExecutor(max_workers=2)
+        self.thread_executor = ThreadPoolExecutor(max_workers=8)
 
     def start(self):
         listener_thread = Thread(target=self.listen_multicast)
+        listener_thread.setDaemon(True)
         listener_thread.start()
         joiner_thread = Thread(
             target=self.delayed_multicast_join,
             args=(params.DISCOVERY_STARTUP_DELAY, self.host, self.port))
+        joiner_thread.setDaemon(True)
         joiner_thread.start()
+
+    def shutdown(self):
+        self.thread_executor.shutdown(wait=False)
 
     def create_join_message(self, ack=False):
         join_msg = messages_pb2.Join()
@@ -79,13 +84,9 @@ class DiscoveryServer:
                         socket.inet_aton(MCAST_GRP) + socket.inet_aton(host))
 
         while True:
-            try:
-                data, _ = sock.recvfrom(1024)
-                self.thread_executor.submit(
-                    self.handle_multicast_message, data)
-            except (KeyboardInterrupt, SystemExit):
-                self.thread_executor.shutdown(wait=False)
-                sys.exit()
+            data, _ = sock.recvfrom(1024)
+            self.thread_executor.submit(
+                self.handle_multicast_message, data)
 
     def handle_multicast_message(self, data):
         try:
