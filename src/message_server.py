@@ -1,6 +1,7 @@
 import sys
 import socket
 import struct
+import asyncio
 import binascii
 from threading import Thread
 import logging
@@ -43,7 +44,6 @@ class MessageServer:
         app = Application()
         app.router.add_route('/', self.handle_message, methods=['POST'])
         app.run(host=self.address, port=self.port)
-        return self.address, self.port
 
     def handle_message(self, request):
         raw_msg = request.body
@@ -80,6 +80,7 @@ class MessageServer:
         return request.Response(body=b'')
 
     def handle_batch_transactions(self, request, batch_txns_msg):
+        # print('received batch')
         for txn_msg in batch_txns_msg.transactions:
             self.message_client.receive_transaction(txn_msg)
 

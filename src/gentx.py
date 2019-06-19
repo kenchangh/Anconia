@@ -53,6 +53,7 @@ def _create_random_transactions(message_client, is_adversarial):
         else:
             msg = generate_virtuous(message_client)
         message_client.broadcast_message(msg)
+        print('len', len(message_client.dag.transactions.keys()))
         time.sleep(params.RANDOM_TX_GENERATION)
 
 

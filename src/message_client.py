@@ -37,6 +37,7 @@ class MessageClient:
         """
         self.host = host
         self.port = port
+        self.is_shutdown = False
 
         self.state = StateDB()
         self.keypair = Keypair.from_genesis_file(read_genesis_state())
@@ -67,9 +68,10 @@ class MessageClient:
         self.txn_accepted_times = {}
 
     def shutdown(self):
-        self.broadcast_executor.shutdown()
-        self.tx_executor.shutdown()
-        self.query_executor.shutdown()
+        self.broadcast_executor.shutdown(wait=False)
+        self.tx_executor.shutdown(wait=False)
+        self.query_executor.shutdown(wait=False)
+        self.is_shutdown = True
 
     @staticmethod
     def get_sub_message(message_type, message):
@@ -173,8 +175,12 @@ class MessageClient:
         running_queries = {}
         accepted = set([])
         while True:
+            if self.is_shutdown:
+                return
             txn_hashes = tuple(self.dag.transactions.keys())
             for txn_hash in txn_hashes:
+                if self.is_shutdown:
+                    return
                 txn = self.dag.transactions[txn_hash]
                 running = running_queries.get(txn_hash)
 
@@ -209,6 +215,9 @@ class MessageClient:
         short_txn_hash = txn_msg.hash[:20]
 
         while consecutive_count < params.BETA_CONSECUTIVE_PARAM:
+            if self.shutdown:
+                return
+
             if iterations >= params.MAX_QUERY_ITERATIONS:
                 break
 
@@ -227,6 +236,9 @@ class MessageClient:
                 messages_pb2.NODE_QUERY_MESSAGE, node_query)
 
             for node in query_nodes:
+                if self.shutdown:
+                    return
+
                 # exceeded QUERY_TIMEOUT
                 if time.time() >= end_by_time:
                     self.logger.error(
