@@ -233,7 +233,7 @@ class DAG:
                     confidence = self.confidence(txn)
                     if confidence > params.BETA_CONFIDENCE_PARAM:
                         with self.lock:
-                            txn.accepted = True
+                            self.transactions[txn_hash].accepted = True
                     else:
                         return False
             else:

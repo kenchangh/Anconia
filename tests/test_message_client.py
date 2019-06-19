@@ -1,4 +1,5 @@
 import config
+import time
 from src.crypto import Keypair
 from src.message_client import MessageClient
 from src.proto import messages_pb2
@@ -37,3 +38,29 @@ def test_bootstrap_state():
         for txn_hash in conflict_set:
             assert client.dag.conflicts.get_conflict(txn_hash)
             assert client.dag.conflicts.get_preferred(txn_hash)
+
+
+def test_median_acceptance():
+    client = MessageClient(light_client=True)
+    recipient = Keypair()
+    client.start_collect_metrics()
+
+    entries = 5
+    messages = [client.generate_txn_object(
+        recipient.address, 100) for _ in range(entries)]
+
+    for msg in messages:
+        client.receive_transaction(msg)
+
+    # transactions not accepted yet
+    median, total = client.calculate_median_acceptance_times()
+    assert median == 0
+    assert total == 0
+
+    for msg in messages:
+        client.dag.transactions[msg.hash].accepted = True
+        client.txn_accepted_times[msg.hash] = time.time()
+
+    median, total = client.calculate_median_acceptance_times()
+    assert median > 0
+    assert total == entries

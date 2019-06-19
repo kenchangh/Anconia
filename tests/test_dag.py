@@ -199,3 +199,4 @@ def test_dag_is_accepted():
     for msg in messages:
         if dag.confidence(msg) > params.BETA_CONFIDENCE_PARAM:
             assert dag.update_accepted(msg)
+            assert dag.transactions[msg.hash].accepted

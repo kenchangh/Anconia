@@ -3,6 +3,7 @@ import time
 import math
 import logging
 import random
+from statistics import median
 from concurrent.futures import ThreadPoolExecutor
 from hashlib import sha256
 from threading import Lock, RLock, Thread
@@ -56,11 +57,19 @@ class MessageClient:
         self.analytics_enabled = analytics
         self.analytics_doc_id = None
 
-        self.metrics_lock = RLock()
+        self.metrics_lock = Lock()
         self.collect_metrics = False
         self.metrics_start = None
         self.metrics_end = None
         self.transactions_count = 0
+
+        self.txn_insert_times = {}
+        self.txn_accepted_times = {}
+
+    def shutdown(self):
+        self.broadcast_executor.shutdown()
+        self.tx_executor.shutdown()
+        self.query_executor.shutdown()
 
     @staticmethod
     def get_sub_message(message_type, message):
@@ -131,11 +140,6 @@ class MessageClient:
                 largest_txns_size = transactions_size
                 largest_sync_graph = sync_graph
 
-        # if the queried SyncGraph comes back larger than
-        # own current state, just ignore because
-        # current node has the most updated state
-        my_transactions_size = len(self.dag.transactions.keys())
-
         if largest_sync_graph:
             self.bootstrap_graph(largest_sync_graph)
             self.logger.info(
@@ -183,7 +187,8 @@ class MessageClient:
 
                 if txn.accepted and txn_hash not in accepted:
                     accepted.add(txn.hash)
-                    print(f'Updated accepted set {accepted}')
+                    self.txn_accepted_times[txn.hash] = time.time()
+                    self.logger.info(f'Updated accepted set {accepted}')
 
     def select_network_sample(self):
         with self.lock:
@@ -265,9 +270,14 @@ class MessageClient:
             self.dag.transactions[txn_msg.hash].queried = True
 
     def start_collect_metrics(self):
-        self.collect_metrics = True
-        self.metrics_start = time.time()
-        self.metrics_end = self.metrics_start + params.METRICS_DURATION
+        metrics_not_started = not self.collect_metrics and not self.metrics_end
+        print('self.collect_metrics', self.collect_metrics)
+        print('MetricsNotStarted', metrics_not_started)
+
+        if metrics_not_started:
+            self.collect_metrics = True
+            self.metrics_start = time.time()
+            self.metrics_end = self.metrics_start + params.METRICS_DURATION
 
     def add_peer(self, new_peer):
         addr, port = new_peer
@@ -275,10 +285,11 @@ class MessageClient:
         self.logger.info(f'Added new peer {addr}:{port}')
 
         peer_len = len(self.peers)
-        metrics_not_started = not self.collect_metrics and not self.metrics_end
-
-        if peer_len == params.PEERS_COUNT - 1 and metrics_not_started:
-            self.start_collect_metrics()
+        print('PeerLen:', peer_len, ', Target:', params.PEERS_COUNT-1)
+        if peer_len >= params.PEERS_COUNT - 1:
+            with self.metrics_lock:
+                self.start_collect_metrics()
+        print('pass PeerLen')
 
         if self.analytics_enabled:
             if self.analytics_doc_id is None:
@@ -365,24 +376,10 @@ class MessageClient:
                 # self.dag.receive_transaction(txn_msg)
                 self.tx_executor.submit(self.dag.receive_transaction, txn_msg)
 
-                # first_level_breadth, max_depth, txn_len = self.dag.analyze_graph()
-                # self.logger.info(
-                #     f'Graph status (FirstLevelBreadth: {first_level_breadth}, MaxDepth: {max_depth}, TxnLen: {txn_len})')
-
-        current_time = time.time()
-
-        if self.collect_metrics and not existing_txn:
-            if current_time >= self.metrics_start and current_time < self.metrics_end:
-                with self.metrics_lock:
-                    if not self.transactions_count:
-                        self.logger.info('METRICS_START')
-                    self.transactions_count += 1
-            elif current_time >= self.metrics_end:
-                with self.metrics_lock:
-                    self.collect_metrics = False
-                    tps = self.transactions_count / params.METRICS_DURATION
-                    self.logger.info(
-                        f'METRICS_END: {tps} TPS, {self.transactions_count} transactions')
+            # self.update_metrics(txn_msg)
+            # first_level_breadth, max_depth, txn_len = self.dag.analyze_graph()
+            # self.logger.info(
+            #     f'Graph status (FirstLevelBreadth: {first_level_breadth}, MaxDepth: {max_depth}, TxnLen: {txn_len})')
 
         if self.analytics_enabled:
             is_preferred = False
@@ -399,6 +396,42 @@ class MessageClient:
                 self.analytics_doc_id, txn_msg, list(conflict_set), is_preferred)
             self.logger.info(f'Added txn {txn_msg.hash[:20]}... to analytics')
 
+    def update_metrics(self, txn_msg):
+        current_time = time.time()
+
+        if self.collect_metrics:
+            if current_time >= self.metrics_start and current_time < self.metrics_end:
+                with self.metrics_lock:
+                    if not self.transactions_count:
+                        self.logger.info('METRICS_START')
+                    self.transactions_count += 1
+                    self.txn_insert_times[txn_msg.hash] = time.time()
+            elif current_time >= self.metrics_end:
+                with self.metrics_lock:
+                    self.collect_metrics = False
+                    median_time, accepted_txn_count = self.calculate_median_acceptance_times()
+                    tps = self.transactions_count / params.METRICS_DURATION
+                    self.logger.info(
+                        f'METRICS_END: {tps} TPS, {self.transactions_count} transactions, {median_time} seconds median acceptance, {accepted_txn_count} txns accepted')
+
+    def calculate_median_acceptance_times(self):
+        times = []
+        txn_hashes = tuple(self.dag.transactions.keys())
+        for txn_hash in txn_hashes:
+            txn = self.dag.transactions[txn_hash]
+            if txn.accepted:
+                insert_time = self.txn_insert_times.get(txn_hash)
+                accepted_time = self.txn_accepted_times.get(txn_hash)
+                if insert_time and accepted_time:
+                    times.append(accepted_time-insert_time)
+
+        accepted_txn_count = 0
+        median_times = 0
+        if times:
+            median_times = median(times)
+            accepted_txn_count = len(times)
+        return median_times, accepted_txn_count
+
     def broadcast_message(self, msg):
         responses = []
         peers = list(self.peers)
@@ -409,10 +442,10 @@ class MessageClient:
             node = (addr, port)
             self.broadcast_executor.submit(self.send_message, node, msg)
             # self.send_message(node, msg)
-        if peers:
-            self.logger.info('Broadcasted transaction')
-        else:
-            self.logger.info('No peers, did not broadcast transaction')
+        # if peers:
+        #     self.logger.info('Broadcasted transaction')
+        # else:
+        #     self.logger.info('No peers, did not broadcast transaction')
         return responses
 
     def sign_transaction(self, txn_msg):
