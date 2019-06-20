@@ -32,8 +32,9 @@ class Peers:
     Peers class that interfaces with the redis db.
     """
 
-    def __init__(self, host):
-        self.key = f'{host}:peers'
+    def __init__(self, my_port):
+        self.key = f'{my_port}:peers'
+        self.my_port = my_port
 
     def __contains__(self, value):
         peers = self.get()
@@ -44,12 +45,22 @@ class Peers:
         return len(peers)
 
     def get(self):
-        return redis.smembers(self.key)
+        ports = redis.smembers(self.key)
+        ports = [int(port) for port in list(ports)]
+        peers = set([('127.0.0.1', port) for port in ports])
 
-    def add(self, port):
+        # remove self
+        myself = ('127.0.0.1', self.my_port)
+        if myself in peers:
+            peers.remove(myself)
+        return peers
+
+    def add(self, peer):
+        host, port = peer
         return redis.sadd(self.key, port)
 
-    def remove(self, port):
+    def remove(self, peer):
+        host, port = peer
         return redis.srem(self.key, port)
 
 
@@ -67,7 +78,7 @@ class MessageClient:
         self.state = StateDB()
         self.keypair = Keypair.from_genesis_file(read_genesis_state())
         self.dag = DAG()
-        self.peers = Peers(host)
+        self.peers = Peers(port)
         self.sessions = {}
 
         self.logger = logging.getLogger('main')
@@ -78,7 +89,7 @@ class MessageClient:
         self.tx_executor = ThreadPoolExecutor(max_workers=8)
         self.query_executor = ThreadPoolExecutor(max_workers=4)
 
-        self.start_query_worker()
+        # self.start_query_worker()
 
         self.analytics_enabled = analytics
         self.analytics_doc_id = None
@@ -466,8 +477,8 @@ class MessageClient:
             node = (addr, port)
             self.broadcast_executor.submit(self.send_message, node, msg)
             # self.send_message(node, msg)
-        if not peers:
-            self.logger.info('No peers, did not broadcast transaction')
+        # if not peers:
+        #     self.logger.info('No peers, did not broadcast transaction')
         return responses
 
     def sign_transaction(self, txn_msg):

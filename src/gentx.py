@@ -47,6 +47,8 @@ def _create_random_transactions(message_client, is_adversarial):
     attacker = Keypair()
 
     while True:
+        if message_client.is_shutdown:
+            return
         msg = None
         if is_adversarial:
             msg = generate_adversarial(message_client, attacker)
