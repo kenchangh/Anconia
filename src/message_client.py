@@ -355,10 +355,10 @@ class MessageClient:
                 self.logger.info(
                     f'Updated analytics/nodes/{self.analytics_doc_id}')
 
-    def send_message(self, node, msg):
+    def send_message(self, node, msg, path='/'):
         start = time.time()
         result = exponential_backoff(
-            self.logger, self._send_message, (node, msg))
+            self.logger, self._send_message, (node, msg, path))
 
         # failure to send a message to node should remove the peer from the peers list
         # however, the send_message could also originate from the client apps
@@ -374,7 +374,7 @@ class MessageClient:
         # print(f'send_message took {end-start} seconds')
         return result
 
-    def _send_message(self, node, msg):
+    def _send_message(self, node, msg, path):
         session = self.sessions.get(node)
         if not session:
             session = requests.Session()
@@ -383,7 +383,7 @@ class MessageClient:
             self.sessions[node] = session
 
         host, port = node
-        uri = f'http://{host}:{port}/'
+        uri = f'http://{host}:{port}{path}'
         req = session.post(uri, data=msg)
         return req.content
 

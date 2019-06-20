@@ -30,7 +30,6 @@ class Anconia:
 
         try:
             discovery_server.start()
-            message_client.sync_graph()
             create_random_transactions(message_client, adversarial)
             message_server.start()
 

@@ -2,6 +2,8 @@ import sys
 import socket
 import struct
 import asyncio
+import time
+import params
 import binascii
 from threading import Thread
 import logging
@@ -24,26 +26,26 @@ class MessageServer:
         self.listener_thread = None
         # self.thread_executor = ThreadPoolExecutor(max_workers=8)
 
-    def bind_to_open_port(self):
-        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        connect_to = ('', 0)
-        if self.address and self.port:
-            connect_to = (self.address, self.port)
-
-        sock.bind(connect_to)
-        sock.listen(16)
-        address, port = sock.getsockname()
-
-        self.sock = sock
-        self.address = address
-        self.port = port
-        return address, port
-
     def start(self):
+        self.init_self()
         app = Application()
+        app.router.add_route('/init', self.init_server, methods=['POST'])
         app.router.add_route('/', self.handle_message, methods=['POST'])
         app.run(host=self.address, port=self.port)
         return self.address, self.port
+
+    def init_self(self):
+        def _init_self():
+            time.sleep(params.INIT_SERVER_DELAY)
+            self.message_client.send_message(
+                (self.address, self.port), b'', '/init')
+        thread = Thread(target=_init_self)
+        thread.start()
+
+    def init_server(self, request):
+        self.message_client.sync_graph()
+        self.message_client.start_query_worker()
+        return request.Response(body=b'')
 
     def handle_message(self, request):
         raw_msg = request.body
