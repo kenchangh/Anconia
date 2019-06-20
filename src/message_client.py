@@ -388,7 +388,7 @@ class MessageClient:
                 # self.dag.receive_transaction(txn_msg)
                 self.tx_executor.submit(self.dag.receive_transaction, txn_msg)
 
-            # self.update_metrics(txn_msg)
+            self.update_metrics(txn_msg)
             # first_level_breadth, max_depth, txn_len = self.dag.analyze_graph()
             # self.logger.info(
             #     f'Graph status (FirstLevelBreadth: {first_level_breadth}, MaxDepth: {max_depth}, TxnLen: {txn_len})')
