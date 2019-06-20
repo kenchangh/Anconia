@@ -7,7 +7,7 @@ from concurrent.futures import ThreadPoolExecutor
 from hashlib import sha256
 from threading import Lock, RLock, Thread
 from proto import messages_pb2
-from common import exponential_backoff, simulate_network_latency
+from common import exponential_backoff, simulate_network_latency, redis
 from utils import read_genesis_state
 from crypto import Keypair
 from statedb import StateDB
@@ -27,6 +27,32 @@ ATTR_NAMES = {
 }
 
 
+class Peers:
+    """
+    Peers class that interfaces with the redis db.
+    """
+
+    def __init__(self, host):
+        self.key = f'{host}:peers'
+
+    def __contains__(self, value):
+        peers = self.get()
+        return value in peers
+
+    def __len__(self):
+        peers = self.get()
+        return len(peers)
+
+    def get(self):
+        return redis.smembers(self.key)
+
+    def add(self, port):
+        return redis.sadd(self.key, port)
+
+    def remove(self, port):
+        return redis.srem(self.key, port)
+
+
 class MessageClient:
     def __init__(self, host='127.0.0.1', port=5000, analytics=False, light_client=False):
         """
@@ -41,7 +67,7 @@ class MessageClient:
         self.state = StateDB()
         self.keypair = Keypair.from_genesis_file(read_genesis_state())
         self.dag = DAG()
-        self.peers = set([])
+        self.peers = Peers(host)
         self.sessions = {}
 
         self.logger = logging.getLogger('main')
@@ -119,7 +145,7 @@ class MessageClient:
         msg = MessageClient.create_message(
             messages_pb2.REQUEST_SYNC_GRAPH_MESSAGE, request_sync_msg)
 
-        peers = set(self.peers)
+        peers = self.peers.get()
         responses = []
 
         for peer in peers:
@@ -204,11 +230,13 @@ class MessageClient:
     def select_network_sample(self):
         with self.lock:
             query_nodes = []
-            if len(self.peers) < params.NETWORK_SAMPLE_SIZE:
-                query_nodes = list(self.peers)
+            peers = self.peers.get()
+
+            if len(peers) < params.NETWORK_SAMPLE_SIZE:
+                query_nodes = list(peers)
             else:
                 query_nodes = random.sample(
-                    self.peers, params.NETWORK_SAMPLE_SIZE)
+                    peers, params.NETWORK_SAMPLE_SIZE)
             return query_nodes
 
     def query_txn(self, txn_msg):
@@ -298,8 +326,9 @@ class MessageClient:
         addr, port = new_peer
         self.peers.add(new_peer)
         self.logger.info(f'Added new peer {addr}:{port}')
+        peers = self.peers.get()
 
-        peer_len = len(self.peers)
+        peer_len = len(peers)
         print('PeerLen:', peer_len, ', Target:', params.PEERS_COUNT-1)
         if peer_len >= params.PEERS_COUNT - 1:
             with self.metrics_lock:
@@ -307,11 +336,11 @@ class MessageClient:
 
         if self.analytics_enabled:
             if self.analytics_doc_id is None:
-                self.analytics_doc_id = analytics.set_nodes(self.peers)
+                self.analytics_doc_id = analytics.set_nodes(peers)
                 self.logger.info(
                     f'Added to analytics/nodes/{self.analytics_doc_id}')
             else:
-                analytics.update_nodes(self.analytics_doc_id, self.peers)
+                analytics.update_nodes(self.analytics_doc_id, peers)
                 self.logger.info(
                     f'Updated analytics/nodes/{self.analytics_doc_id}')
 
@@ -429,7 +458,7 @@ class MessageClient:
 
     def broadcast_message(self, msg):
         responses = []
-        peers = list(self.peers)
+        peers = list(self.peers.get())
         if len(peers) > params.MAX_BROADCAST_PEERS:
             peers = random.sample(peers, params.MAX_BROADCAST_PEERS)
 

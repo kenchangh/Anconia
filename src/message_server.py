@@ -19,7 +19,6 @@ class MessageServer:
         self.message_client = message_client
         self.sock = None
         self.logger = logging.getLogger('main')
-        self.peers = set([])
         self.address = host
         self.port = port
         self.listener_thread = None
@@ -41,13 +40,10 @@ class MessageServer:
         return address, port
 
     def start(self):
-        app = Sanic()
-
-        @app.route('/', methods=['POST'])
-        async def handle_message(request):
-            return self.handle_message(request)
-
-        app.run(host=self.address, port=self.port, access_log=False)
+        app = Application()
+        app.router.add_route('/', self.handle_message, methods=['POST'])
+        app.run(host=self.address, port=self.port)
+        return self.address, self.port
 
     def handle_message(self, request):
         raw_msg = request.body

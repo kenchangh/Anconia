@@ -2,6 +2,9 @@ import time
 import random
 import params
 from proto import messages_pb2
+import redis as _redis
+
+redis = _redis.Redis(host='localhost', port=6379, db=0)
 
 MCAST_GRP = '224.1.1.1'
 MCAST_PORT = 5007
