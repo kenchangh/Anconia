@@ -19,6 +19,10 @@ trap cleanup EXIT
 # sleep 1
 # ((port++))
 
+redis-server &
+
+redis-cli flushall
+
 for i in `seq 1 $max`
 do
   printf "Running node $i\n"
