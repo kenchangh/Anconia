@@ -64,7 +64,6 @@ class MessageClient:
         self.transactions_count = 0
 
         self.txn_insert_times = {}
-        self.txn_accepted_times = {}
 
     def shutdown(self):
         self.broadcast_executor.shutdown(wait=False)
@@ -191,6 +190,7 @@ class MessageClient:
                     self.dag.update_accepted(txn)
 
                 if txn.accepted and txn_hash not in accepted:
+                    print('ACCEPTED')
                     accepted.add(txn.hash)
                     inserted_time = self.txn_insert_times.get(txn.hash)
                     accepted_time = time.time()
@@ -393,6 +393,7 @@ class MessageClient:
                 # self.dag.receive_transaction(txn_msg)
                 self.tx_executor.submit(self.dag.receive_transaction, txn_msg)
 
+            self.txn_insert_times[txn_msg.hash] = time.time()
             self.update_metrics(txn_msg)
             # first_level_breadth, max_depth, txn_len = self.dag.analyze_graph()
             # self.logger.info(
@@ -422,7 +423,6 @@ class MessageClient:
                     if not self.transactions_count:
                         self.logger.info('METRICS_START')
                     self.transactions_count += 1
-                    self.txn_insert_times[txn_msg.hash] = time.time()
             elif current_time >= self.metrics_end:
                 with self.metrics_lock:
                     self.collect_metrics = False
