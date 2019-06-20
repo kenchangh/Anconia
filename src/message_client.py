@@ -440,9 +440,7 @@ class MessageClient:
             node = (addr, port)
             self.broadcast_executor.submit(self.send_message, node, msg)
             # self.send_message(node, msg)
-        if peers:
-            self.logger.info('Broadcasted transaction')
-        else:
+        if not peers:
             self.logger.info('No peers, did not broadcast transaction')
         return responses
 
