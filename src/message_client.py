@@ -265,7 +265,7 @@ class MessageClient:
 
             # self.logger.info(
             #     f'Received {strongly_preferred_count} strongly-preferred responses for {short_txn_hash}')
-        
+
             with self.dag.lock:
                 if strongly_preferred_count >= query_success_threshold:
                     short_txn_hash = txn_msg.hash[:20]
@@ -288,8 +288,6 @@ class MessageClient:
 
     def start_collect_metrics(self):
         metrics_not_started = not self.collect_metrics and not self.metrics_end
-        print('self.collect_metrics', self.collect_metrics)
-        print('MetricsNotStarted', metrics_not_started)
 
         if metrics_not_started:
             self.collect_metrics = True
@@ -306,7 +304,6 @@ class MessageClient:
         if peer_len >= params.PEERS_COUNT - 1:
             with self.metrics_lock:
                 self.start_collect_metrics()
-        print('pass PeerLen')
 
         if self.analytics_enabled:
             if self.analytics_doc_id is None:
