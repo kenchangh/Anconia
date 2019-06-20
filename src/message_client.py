@@ -3,7 +3,6 @@ import time
 import math
 import logging
 import random
-from statistics import median
 from concurrent.futures import ThreadPoolExecutor
 from hashlib import sha256
 from threading import Lock, RLock, Thread
@@ -429,7 +428,7 @@ class MessageClient:
                     self.collect_metrics = False
                     tps = self.transactions_count / params.METRICS_DURATION
                     self.logger.info(
-                        f'METRICS_END: {tps} TPS, {self.transactions_count} transactions, {median_time} seconds median acceptance, {accepted_txn_count} txns accepted')
+                        f'METRICS_END: {tps} TPS, {self.transactions_count} transactions')
 
     def broadcast_message(self, msg):
         responses = []
