@@ -8,7 +8,7 @@ import logging
 from concurrent.futures import ThreadPoolExecutor
 import socketserver
 import traceback
-from sanic import Sanic, response
+from japronto import Application
 from proto import messages_pb2
 from message_client import MessageClient
 from common import exponential_backoff, simulate_network_latency
@@ -77,19 +77,19 @@ class MessageServer:
             return handler_function(request, sub_msg)
         except Exception:
             traceback.print_exc()
-            return response.raw(body=b'', status=500)
-        return response.raw(body=b'')
+            return request.Response(code=500)
+        return request.Response(body=b'')
 
     def handle_transaction(self, request, txn_msg):
         self.message_client.receive_transaction(txn_msg)
-        return response.raw(body=b'')
+        return request.Response(body=b'')
 
     def handle_batch_transactions(self, request, batch_txns_msg):
         # print('received batch')
         for txn_msg in batch_txns_msg.transactions:
             self.message_client.receive_transaction(txn_msg)
 
-        return response.raw(body=b'')
+        return request.Response(body=b'')
 
     def handle_node_query(self, request, query_msg):
         """
@@ -130,7 +130,7 @@ class MessageServer:
         response_query.from_port = self.port
         msg = MessageClient.create_message(
             messages_pb2.NODE_QUERY_MESSAGE, response_query)
-        return response.raw(body=msg)
+        return request.Response(body=msg)
 
     def handle_sync_graph(self, request, request_sync_graph_msg):
         if request_sync_graph_msg.target_txn_hash:
@@ -142,8 +142,8 @@ class MessageServer:
                 sync_msg.transactions.append(txn)
                 msg = MessageClient.create_message(
                     messages_pb2.SYNC_GRAPH_MESSAGE, sync_msg)
-                return response.raw(body=msg)
-            return response.raw(body=msg)
+                return request.Response(body=msg)
+            return request.Response(body=msg)
 
         sync_msg = messages_pb2.SyncGraph()
         transactions = self.message_client.dag.transactions.values()
@@ -158,10 +158,10 @@ class MessageServer:
         msg = MessageClient.create_message(
             messages_pb2.SYNC_GRAPH_MESSAGE, sync_msg
         )
-        return response.raw(body=msg)
+        return request.Response(body=msg)
 
     def add_peer(self, request, join_msg):
         new_peer = (join_msg.address, join_msg.port)
         with self.message_client.lock:
             self.message_client.add_peer(new_peer)
-        return response.raw(body=b'')
+        return request.Response(body=b'')
