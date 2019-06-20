@@ -220,7 +220,7 @@ class MessageClient:
         short_txn_hash = txn_msg.hash[:20]
 
         while consecutive_count < params.BETA_CONSECUTIVE_PARAM:
-            if self.shutdown:
+            if self.is_shutdown:
                 return
 
             if iterations >= params.MAX_QUERY_ITERATIONS:
@@ -241,7 +241,7 @@ class MessageClient:
                 messages_pb2.NODE_QUERY_MESSAGE, node_query)
 
             for node in query_nodes:
-                if self.shutdown:
+                if self.is_shutdown:
                     return
 
                 # exceeded QUERY_TIMEOUT
@@ -265,7 +265,7 @@ class MessageClient:
 
             # self.logger.info(
             #     f'Received {strongly_preferred_count} strongly-preferred responses for {short_txn_hash}')
-
+        
             with self.dag.lock:
                 if strongly_preferred_count >= query_success_threshold:
                     short_txn_hash = txn_msg.hash[:20]
