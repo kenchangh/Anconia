@@ -193,14 +193,14 @@ class MessageClient:
 
                 if txn.accepted and txn_hash not in accepted:
                     accepted.add(txn.hash)
-                    inserted_time = self.txn_insert_times[txn.hash]
+                    inserted_time = self.txn_insert_times.get(txn.hash)
                     accepted_time = time.time()
 
                     if inserted_time:
                         time_taken = accepted_time - inserted_time
                         total_accepted = len(accepted)
                         self.logger.info(
-                            f'Updated accepted set: {time_taken} seconds, {total_accepted} txns')
+                            f'UPDATE_ACCEPTED: {time_taken} seconds, {total_accepted} txns')
 
     def select_network_sample(self):
         with self.lock:
