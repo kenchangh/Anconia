@@ -440,10 +440,10 @@ class MessageClient:
             node = (addr, port)
             self.broadcast_executor.submit(self.send_message, node, msg)
             # self.send_message(node, msg)
-        # if peers:
-        #     self.logger.info('Broadcasted transaction')
-        # else:
-        #     self.logger.info('No peers, did not broadcast transaction')
+        if peers:
+            self.logger.info('Broadcasted transaction')
+        else:
+            self.logger.info('No peers, did not broadcast transaction')
         return responses
 
     def sign_transaction(self, txn_msg):
