@@ -193,8 +193,14 @@ class MessageClient:
 
                 if txn.accepted and txn_hash not in accepted:
                     accepted.add(txn.hash)
-                    self.txn_accepted_times[txn.hash] = time.time()
-                    self.logger.info(f'Updated accepted set {accepted}')
+                    inserted_time = self.txn_insert_times[txn.hash]
+                    accepted_time = time.time()
+
+                    if inserted_time:
+                        time_taken = accepted_time - inserted_time
+                        total_accepted = len(accepted)
+                        self.logger.info(
+                            f'Updated accepted set: {time_taken} seconds, {total_accepted} txns')
 
     def select_network_sample(self):
         with self.lock:
@@ -421,28 +427,9 @@ class MessageClient:
             elif current_time >= self.metrics_end:
                 with self.metrics_lock:
                     self.collect_metrics = False
-                    median_time, accepted_txn_count = self.calculate_median_acceptance_times()
                     tps = self.transactions_count / params.METRICS_DURATION
                     self.logger.info(
                         f'METRICS_END: {tps} TPS, {self.transactions_count} transactions, {median_time} seconds median acceptance, {accepted_txn_count} txns accepted')
-
-    def calculate_median_acceptance_times(self):
-        times = []
-        txn_hashes = tuple(self.dag.transactions.keys())
-        for txn_hash in txn_hashes:
-            txn = self.dag.transactions[txn_hash]
-            if txn.accepted:
-                insert_time = self.txn_insert_times.get(txn_hash)
-                accepted_time = self.txn_accepted_times.get(txn_hash)
-                if insert_time and accepted_time:
-                    times.append(accepted_time-insert_time)
-
-        accepted_txn_count = 0
-        median_times = 0
-        if times:
-            median_times = median(times)
-            accepted_txn_count = len(times)
-        return median_times, accepted_txn_count
 
     def broadcast_message(self, msg):
         responses = []
