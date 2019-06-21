@@ -65,7 +65,7 @@ class Peers:
 
 
 class MessageClient:
-    def __init__(self, host='127.0.0.1', port=5000, analytics=False, light_client=False):
+    def __init__(self, host='127.0.0.1', port=5000, analytics=False, light_client=False,own_key=None):
         """
         Client that interacts with other peers in the network.
 
@@ -77,8 +77,13 @@ class MessageClient:
 
         self.state = StateDB()
         self.keypair = Keypair.from_genesis_file(read_genesis_state())
+
+        if own_key:
+            self.keypair = own_key
+
         self.dag = DAG()
         self.peers = Peers(port)
+        self.FIXED_PEERS = (('127.0.0.1',5000),('127.0.0.1',5001),('127.0.0.1',5003))
         self.sessions = {}
 
         self.logger = logging.getLogger('main')
@@ -133,6 +138,17 @@ class MessageClient:
         getattr(common_msg, attr_name).CopyFrom(sub_msg)
         msg = common_msg.SerializeToString()
         return msg
+
+    def check_balance(self):
+        check_balance = messages_pb2.CheckBalance()
+        check_balance.address = self.keypair.nice_address
+        msg = check_balance.SerializeToString()
+
+        peer = self.FIXED_PEERS[0]
+        response = self.send_message(peer, msg, path='/balance')
+        balance_response = messages_pb2.BalanceResponse()
+        balance_response.ParseFromString(response)
+        return balance_response
 
     def sync_graph(self):
         thread = Thread(target=self._sync_graph)

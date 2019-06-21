@@ -30,6 +30,9 @@ class MessageServer:
         self.init_self()
         app = Application()
         app.router.add_route('/init', self.init_server, methods=['POST'])
+        app.router.add_route('/balance', self.check_balance, methods=['POST'])
+        app.router.add_route(
+            '/txstatus', self.check_txstatus, methods=['POST'])
         app.router.add_route('/', self.handle_message, methods=['POST'])
         app.run(host=self.address, port=self.port)
         return self.address, self.port
@@ -46,6 +49,27 @@ class MessageServer:
         self.message_client.sync_graph()
         self.message_client.start_query_worker()
         return request.Response(body=b'')
+
+    def check_balance(self, request):
+        check_balance = messages_pb2.CheckBalance()
+        check_balance.ParseFromString(request.body)
+
+        if len(check_balance.address) != 23:
+            return request.Response(code=400)
+        address = check_balance.address[3:]
+
+        balance = self.message_client.state.balances.get(address, 0)
+        nonce = self.message_client.state.nonces.get(address, 0)
+        balance_response = messages_pb2.BalanceResponse()
+        balance_response.address = check_balance.address
+        balance_response.balance = balance
+        balance_response.nonce = nonce
+        msg = balance_response.SerializeToString()
+
+        return request.Response(body=msg)
+
+    def check_txstatus(self, request):
+        pass
 
     def handle_message(self, request):
         raw_msg = request.body

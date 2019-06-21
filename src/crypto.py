@@ -8,6 +8,7 @@ class Keypair:
         self.privkey = SigningKey.generate()  # uses NIST192p
         self.pubkey = self.privkey.get_verifying_key()
         self.address = Keypair.generate_address(self.pubkey)
+        self.nice_address = 'anc'+self.address
 
     @staticmethod
     def generate_address(pubkey):
@@ -15,6 +16,15 @@ class Keypair:
         # take the hash(public_key) and only use the last 20 characters
         address = sha256(pubkey.to_string()).hexdigest()[-20:]
         return address
+
+    @staticmethod
+    def from_private_key(privkey):
+        keypair = Keypair()
+        keypair.privkey = privkey
+        keypair.pubkey = privkey.get_verifying_key()
+        keypair.address = Keypair.generate_address(keypair.pubkey)
+        keypair.nice_address = 'anc'+keypair.address
+        return keypair
 
     @staticmethod
     def from_genesis_file(accounts):
@@ -26,6 +36,7 @@ class Keypair:
         keypair.privkey = privkey
         keypair.pubkey = privkey.get_verifying_key()
         keypair.address = Keypair.generate_address(keypair.pubkey)
+        keypair.nice_address = 'anc'+keypair.address
         return keypair
 
     def sign(self, message):

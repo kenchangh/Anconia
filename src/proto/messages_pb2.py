@@ -21,7 +21,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
   package='messages',
   syntax='proto2',
   serialized_options=None,
-  serialized_pb=_b('\n\x0emessages.proto\x12\x08messages\"\xe5\x02\n\rCommonMessage\x12+\n\x0cmessage_type\x18\x01 \x02(\x0e\x32\x15.messages.MessageType\x12\x1e\n\x04join\x18\x02 \x01(\x0b\x32\x0e.messages.JoinH\x00\x12,\n\x0btransaction\x18\x03 \x01(\x0b\x32\x15.messages.TransactionH\x00\x12)\n\nnode_query\x18\x04 \x01(\x0b\x32\x13.messages.NodeQueryH\x00\x12)\n\nsync_graph\x18\x05 \x01(\x0b\x32\x13.messages.SyncGraphH\x00\x12\x38\n\x12request_sync_graph\x18\x06 \x01(\x0b\x32\x1a.messages.RequestSyncGraphH\x00\x12\x39\n\x12\x62\x61tch_transactions\x18\x07 \x01(\x0b\x32\x1b.messages.BatchTransactionsH\x00\x42\x0e\n\x0cmessage_body\"e\n\tNodeQuery\x12\x10\n\x08txn_hash\x18\x01 \x02(\t\x12\x1d\n\x15is_strongly_preferred\x18\x02 \x02(\x08\x12\x14\n\x0c\x66rom_address\x18\x03 \x02(\t\x12\x11\n\tfrom_port\x18\x04 \x02(\r\"\x1d\n\x0b\x43onflictSet\x12\x0e\n\x06hashes\x18\x01 \x03(\t\"@\n\x11\x42\x61tchTransactions\x12+\n\x0ctransactions\x18\x01 \x03(\x0b\x32\x15.messages.Transaction\"\xe9\x01\n\x0bTransaction\x12\x0e\n\x06sender\x18\x01 \x02(\t\x12\x11\n\trecipient\x18\x02 \x02(\t\x12\r\n\x05nonce\x18\x03 \x02(\x04\x12\x0e\n\x06\x61mount\x18\x04 \x02(\x04\x12\x0c\n\x04\x64\x61ta\x18\x05 \x02(\t\x12\x0c\n\x04hash\x18\x06 \x02(\t\x12\x0f\n\x07parents\x18\x07 \x03(\t\x12\x10\n\x08\x63hildren\x18\x08 \x03(\t\x12\x11\n\tsignature\x18\t \x01(\t\x12\x15\n\rsender_pubkey\x18\n \x02(\t\x12\x0c\n\x04\x63hit\x18\x0b \x01(\x08\x12\x0f\n\x07queried\x18\x0c \x01(\x08\x12\x10\n\x08\x61\x63\x63\x65pted\x18\r \x01(\x08\"b\n\tSyncGraph\x12+\n\x0ctransactions\x18\x01 \x03(\x0b\x32\x15.messages.Transaction\x12(\n\tconflicts\x18\x02 \x03(\x0b\x32\x15.messages.ConflictSet\"Z\n\x10RequestSyncGraph\x12\x0f\n\x07\x61\x64\x64ress\x18\x01 \x02(\t\x12\x0c\n\x04port\x18\x02 \x02(\x05\x12\x0e\n\x06pubkey\x18\x03 \x02(\t\x12\x17\n\x0ftarget_txn_hash\x18\x04 \x01(\t\"\x94\x01\n\x04Join\x12\x0f\n\x07\x61\x64\x64ress\x18\x01 \x02(\t\x12\x0c\n\x04port\x18\x02 \x02(\x05\x12\x0e\n\x06pubkey\x18\x03 \x02(\t\x12\x10\n\x08nickname\x18\x04 \x01(\t\x12&\n\tjoin_type\x18\x05 \x02(\x0e\x32\x13.messages.Join.Type\"#\n\x04Type\x12\r\n\tINIT_JOIN\x10\x00\x12\x0c\n\x08\x41\x43K_JOIN\x10\x01*\xa8\x01\n\x0bMessageType\x12\x10\n\x0cJOIN_MESSAGE\x10\x00\x12\x17\n\x13TRANSACTION_MESSAGE\x10\x01\x12\x16\n\x12NODE_QUERY_MESSAGE\x10\x02\x12\x16\n\x12SYNC_GRAPH_MESSAGE\x10\x03\x12\x1e\n\x1aREQUEST_SYNC_GRAPH_MESSAGE\x10\x04\x12\x1e\n\x1a\x42\x41TCH_TRANSACTIONS_MESSAGE\x10\x05')
+  serialized_pb=_b('\n\x0emessages.proto\x12\x08messages\"\xe5\x02\n\rCommonMessage\x12+\n\x0cmessage_type\x18\x01 \x02(\x0e\x32\x15.messages.MessageType\x12\x1e\n\x04join\x18\x02 \x01(\x0b\x32\x0e.messages.JoinH\x00\x12,\n\x0btransaction\x18\x03 \x01(\x0b\x32\x15.messages.TransactionH\x00\x12)\n\nnode_query\x18\x04 \x01(\x0b\x32\x13.messages.NodeQueryH\x00\x12)\n\nsync_graph\x18\x05 \x01(\x0b\x32\x13.messages.SyncGraphH\x00\x12\x38\n\x12request_sync_graph\x18\x06 \x01(\x0b\x32\x1a.messages.RequestSyncGraphH\x00\x12\x39\n\x12\x62\x61tch_transactions\x18\x07 \x01(\x0b\x32\x1b.messages.BatchTransactionsH\x00\x42\x0e\n\x0cmessage_body\"e\n\tNodeQuery\x12\x10\n\x08txn_hash\x18\x01 \x02(\t\x12\x1d\n\x15is_strongly_preferred\x18\x02 \x02(\x08\x12\x14\n\x0c\x66rom_address\x18\x03 \x02(\t\x12\x11\n\tfrom_port\x18\x04 \x02(\r\"\x1f\n\x0c\x43heckBalance\x12\x0f\n\x07\x61\x64\x64ress\x18\x01 \x02(\t\"B\n\x0f\x42\x61lanceResponse\x12\x0f\n\x07\x61\x64\x64ress\x18\x01 \x02(\t\x12\x0f\n\x07\x62\x61lance\x18\x02 \x02(\x04\x12\r\n\x05nonce\x18\x03 \x02(\r\"\x1d\n\x0b\x43onflictSet\x12\x0e\n\x06hashes\x18\x01 \x03(\t\"@\n\x11\x42\x61tchTransactions\x12+\n\x0ctransactions\x18\x01 \x03(\x0b\x32\x15.messages.Transaction\"\xe9\x01\n\x0bTransaction\x12\x0e\n\x06sender\x18\x01 \x02(\t\x12\x11\n\trecipient\x18\x02 \x02(\t\x12\r\n\x05nonce\x18\x03 \x02(\x04\x12\x0e\n\x06\x61mount\x18\x04 \x02(\x04\x12\x0c\n\x04\x64\x61ta\x18\x05 \x02(\t\x12\x0c\n\x04hash\x18\x06 \x02(\t\x12\x0f\n\x07parents\x18\x07 \x03(\t\x12\x10\n\x08\x63hildren\x18\x08 \x03(\t\x12\x11\n\tsignature\x18\t \x01(\t\x12\x15\n\rsender_pubkey\x18\n \x02(\t\x12\x0c\n\x04\x63hit\x18\x0b \x01(\x08\x12\x0f\n\x07queried\x18\x0c \x01(\x08\x12\x10\n\x08\x61\x63\x63\x65pted\x18\r \x01(\x08\"b\n\tSyncGraph\x12+\n\x0ctransactions\x18\x01 \x03(\x0b\x32\x15.messages.Transaction\x12(\n\tconflicts\x18\x02 \x03(\x0b\x32\x15.messages.ConflictSet\"Z\n\x10RequestSyncGraph\x12\x0f\n\x07\x61\x64\x64ress\x18\x01 \x02(\t\x12\x0c\n\x04port\x18\x02 \x02(\x05\x12\x0e\n\x06pubkey\x18\x03 \x02(\t\x12\x17\n\x0ftarget_txn_hash\x18\x04 \x01(\t\"\x94\x01\n\x04Join\x12\x0f\n\x07\x61\x64\x64ress\x18\x01 \x02(\t\x12\x0c\n\x04port\x18\x02 \x02(\x05\x12\x0e\n\x06pubkey\x18\x03 \x02(\t\x12\x10\n\x08nickname\x18\x04 \x01(\t\x12&\n\tjoin_type\x18\x05 \x02(\x0e\x32\x13.messages.Join.Type\"#\n\x04Type\x12\r\n\tINIT_JOIN\x10\x00\x12\x0c\n\x08\x41\x43K_JOIN\x10\x01*\xa8\x01\n\x0bMessageType\x12\x10\n\x0cJOIN_MESSAGE\x10\x00\x12\x17\n\x13TRANSACTION_MESSAGE\x10\x01\x12\x16\n\x12NODE_QUERY_MESSAGE\x10\x02\x12\x16\n\x12SYNC_GRAPH_MESSAGE\x10\x03\x12\x1e\n\x1aREQUEST_SYNC_GRAPH_MESSAGE\x10\x04\x12\x1e\n\x1a\x42\x41TCH_TRANSACTIONS_MESSAGE\x10\x05')
 )
 
 _MESSAGETYPE = _descriptor.EnumDescriptor(
@@ -57,8 +57,8 @@ _MESSAGETYPE = _descriptor.EnumDescriptor(
   ],
   containing_type=None,
   serialized_options=None,
-  serialized_start=1168,
-  serialized_end=1336,
+  serialized_start=1269,
+  serialized_end=1437,
 )
 _sym_db.RegisterEnumDescriptor(_MESSAGETYPE)
 
@@ -88,8 +88,8 @@ _JOIN_TYPE = _descriptor.EnumDescriptor(
   ],
   containing_type=None,
   serialized_options=None,
-  serialized_start=1130,
-  serialized_end=1165,
+  serialized_start=1231,
+  serialized_end=1266,
 )
 _sym_db.RegisterEnumDescriptor(_JOIN_TYPE)
 
@@ -222,6 +222,82 @@ _NODEQUERY = _descriptor.Descriptor(
 )
 
 
+_CHECKBALANCE = _descriptor.Descriptor(
+  name='CheckBalance',
+  full_name='messages.CheckBalance',
+  filename=None,
+  file=DESCRIPTOR,
+  containing_type=None,
+  fields=[
+    _descriptor.FieldDescriptor(
+      name='address', full_name='messages.CheckBalance.address', index=0,
+      number=1, type=9, cpp_type=9, label=2,
+      has_default_value=False, default_value=_b("").decode('utf-8'),
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
+  ],
+  extensions=[
+  ],
+  nested_types=[],
+  enum_types=[
+  ],
+  serialized_options=None,
+  is_extendable=False,
+  syntax='proto2',
+  extension_ranges=[],
+  oneofs=[
+  ],
+  serialized_start=491,
+  serialized_end=522,
+)
+
+
+_BALANCERESPONSE = _descriptor.Descriptor(
+  name='BalanceResponse',
+  full_name='messages.BalanceResponse',
+  filename=None,
+  file=DESCRIPTOR,
+  containing_type=None,
+  fields=[
+    _descriptor.FieldDescriptor(
+      name='address', full_name='messages.BalanceResponse.address', index=0,
+      number=1, type=9, cpp_type=9, label=2,
+      has_default_value=False, default_value=_b("").decode('utf-8'),
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='balance', full_name='messages.BalanceResponse.balance', index=1,
+      number=2, type=4, cpp_type=4, label=2,
+      has_default_value=False, default_value=0,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='nonce', full_name='messages.BalanceResponse.nonce', index=2,
+      number=3, type=13, cpp_type=3, label=2,
+      has_default_value=False, default_value=0,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
+  ],
+  extensions=[
+  ],
+  nested_types=[],
+  enum_types=[
+  ],
+  serialized_options=None,
+  is_extendable=False,
+  syntax='proto2',
+  extension_ranges=[],
+  oneofs=[
+  ],
+  serialized_start=524,
+  serialized_end=590,
+)
+
+
 _CONFLICTSET = _descriptor.Descriptor(
   name='ConflictSet',
   full_name='messages.ConflictSet',
@@ -248,8 +324,8 @@ _CONFLICTSET = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=491,
-  serialized_end=520,
+  serialized_start=592,
+  serialized_end=621,
 )
 
 
@@ -279,8 +355,8 @@ _BATCHTRANSACTIONS = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=522,
-  serialized_end=586,
+  serialized_start=623,
+  serialized_end=687,
 )
 
 
@@ -394,8 +470,8 @@ _TRANSACTION = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=589,
-  serialized_end=822,
+  serialized_start=690,
+  serialized_end=923,
 )
 
 
@@ -432,8 +508,8 @@ _SYNCGRAPH = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=824,
-  serialized_end=922,
+  serialized_start=925,
+  serialized_end=1023,
 )
 
 
@@ -484,8 +560,8 @@ _REQUESTSYNCGRAPH = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=924,
-  serialized_end=1014,
+  serialized_start=1025,
+  serialized_end=1115,
 )
 
 
@@ -544,8 +620,8 @@ _JOIN = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=1017,
-  serialized_end=1165,
+  serialized_start=1118,
+  serialized_end=1266,
 )
 
 _COMMONMESSAGE.fields_by_name['message_type'].enum_type = _MESSAGETYPE
@@ -580,6 +656,8 @@ _JOIN.fields_by_name['join_type'].enum_type = _JOIN_TYPE
 _JOIN_TYPE.containing_type = _JOIN
 DESCRIPTOR.message_types_by_name['CommonMessage'] = _COMMONMESSAGE
 DESCRIPTOR.message_types_by_name['NodeQuery'] = _NODEQUERY
+DESCRIPTOR.message_types_by_name['CheckBalance'] = _CHECKBALANCE
+DESCRIPTOR.message_types_by_name['BalanceResponse'] = _BALANCERESPONSE
 DESCRIPTOR.message_types_by_name['ConflictSet'] = _CONFLICTSET
 DESCRIPTOR.message_types_by_name['BatchTransactions'] = _BATCHTRANSACTIONS
 DESCRIPTOR.message_types_by_name['Transaction'] = _TRANSACTION
@@ -602,6 +680,20 @@ NodeQuery = _reflection.GeneratedProtocolMessageType('NodeQuery', (_message.Mess
   # @@protoc_insertion_point(class_scope:messages.NodeQuery)
   ))
 _sym_db.RegisterMessage(NodeQuery)
+
+CheckBalance = _reflection.GeneratedProtocolMessageType('CheckBalance', (_message.Message,), dict(
+  DESCRIPTOR = _CHECKBALANCE,
+  __module__ = 'messages_pb2'
+  # @@protoc_insertion_point(class_scope:messages.CheckBalance)
+  ))
+_sym_db.RegisterMessage(CheckBalance)
+
+BalanceResponse = _reflection.GeneratedProtocolMessageType('BalanceResponse', (_message.Message,), dict(
+  DESCRIPTOR = _BALANCERESPONSE,
+  __module__ = 'messages_pb2'
+  # @@protoc_insertion_point(class_scope:messages.BalanceResponse)
+  ))
+_sym_db.RegisterMessage(BalanceResponse)
 
 ConflictSet = _reflection.GeneratedProtocolMessageType('ConflictSet', (_message.Message,), dict(
   DESCRIPTOR = _CONFLICTSET,

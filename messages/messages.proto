@@ -30,6 +30,16 @@ message NodeQuery {
   required uint32 from_port = 4;
 }
 
+message CheckBalance {
+  required string address = 1;
+}
+
+message BalanceResponse {
+  required string address = 1;
+  required uint64 balance = 2;
+  required uint32 nonce = 3;
+}
+
 message ConflictSet {
   repeated string hashes = 1;
 }
