@@ -21,7 +21,7 @@ logger.propagate = False
 
 class Anconia:
     def start(self, host='127.0.0.1', port=5000, analytics=False,
-              adversarial=False, pubkey='123', nickname='abc'):
+              adversarial=False, generate_random_tx=True, pubkey='123', nickname='abc'):
         message_client = MessageClient(
             host=host, port=port, analytics=analytics)
         message_server = MessageServer(message_client, host=host, port=port)
@@ -30,7 +30,9 @@ class Anconia:
 
         try:
             discovery_server.start()
-            create_random_transactions(message_client, adversarial)
+
+            if generate_random_tx:
+                create_random_transactions(message_client, adversarial)
             message_server.start()
 
         except (KeyboardInterrupt, SystemExit):
@@ -51,6 +53,11 @@ if __name__ == '__main__':
         '--analytics', '-a', type=bool, help='Starts the RPC server with analytics reporting', default=False)
     parser.add_argument(
         '--adversarial', '-z', type=bool, help='Starts the blockchain with adversarial network conditions', default=False)
+
+    parser.add_argument('--randomtx', dest='randomtx', action='store_true')
+    parser.add_argument('--no-randomtx', dest='randomtx', action='store_false')
+    parser.set_defaults(randomtx=True)
+
     args = parser.parse_args(sys.argv[1:])
 
     if args.verbose:
@@ -60,4 +67,5 @@ if __name__ == '__main__':
 
     anconia = Anconia()
     anconia.start(host=args.host, port=args.port,
-                  analytics=args.analytics, adversarial=args.adversarial)
+                  analytics=args.analytics, adversarial=args.adversarial,
+                  generate_random_tx=args.randomtx)
