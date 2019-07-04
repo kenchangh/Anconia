@@ -94,8 +94,6 @@ class MessageClient:
         self.tx_executor = ThreadPoolExecutor(max_workers=8)
         self.query_executor = ThreadPoolExecutor(max_workers=4)
 
-        # self.start_query_worker()
-
         self.analytics_enabled = analytics
         self.analytics_doc_id = None
 
@@ -138,7 +136,7 @@ class MessageClient:
         getattr(common_msg, attr_name).CopyFrom(sub_msg)
         msg = common_msg.SerializeToString()
         return msg
-
+    
     def check_balance(self):
         check_balance = messages_pb2.CheckBalance()
         check_balance.address = self.keypair.nice_address

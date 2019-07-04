@@ -3,10 +3,10 @@
   "[python]": {
     "editor.tabSize": 4
   },
-  "python.testing.pyTestArgs": [
+  "python.testing.pytestArgs": [
     "tests"
   ],
   "python.testing.unittestEnabled": false,
   "python.testing.nosetestsEnabled": false,
-  "python.testing.pyTestEnabled": true
+  "python.testing.pytestEnabled": true
 }

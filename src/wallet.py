@@ -1,3 +1,4 @@
+from proto import messages_pb2
 from message_client import MessageClient
 from crypto import Keypair, SigningKey, NIST192p
 
@@ -10,24 +11,82 @@ def generate_wallet():
     print(keypair.privkey.to_string().hex())
 
 
-def print_account(privkey_input):
-    privkey = SigningKey.from_string(privkey_input, curve=NIST192p)
-    keypair = Keypair.from_private_key(privkey)
-    message_client = MessageClient(light_client=True, own_key=keypair)
+def print_account(message_client):
     balance_response = message_client.check_balance()
 
     print()
     print('Address:', balance_response.address)
-    print('Balance:', f'{balance_response.balance} ANC')
+    print('Balance:', f'{balance_response.balance:,} ANC')
     print('Nonce:', balance_response.nonce)
     print()
+
+
+def send_transaction(message_client):
+    recipient_addr = None
+    amount = None
+
+    while True:
+        print('Enter the recipient address:', end=" ")
+        recipient_addr = input()
+
+        if len(recipient_addr) != 23 and recipient_addr[:3] != 'anc':
+            print('Invalid address!\n')
+            continue
+
+        print('Enter the amount to send:', end=" ")
+
+        amount = input()
+        try:
+            amount = int(amount)
+            break
+        except ValueError:
+            print('Invalid amount!\n')
+            continue
+
+    msg_obj = message_client.generate_txn_object(recipient_addr, amount)
+    msg = MessageClient.create_message(
+        messages_pb2.TRANSACTION_MESSAGE, msg_obj)
+    message_client.send_message(message_client.FIXED_PEERS[0], msg)
+    print()
+    print('Broadcasted transaction to network!')
+    print(f'Transaction hash: {msg_obj.hash}')
 
 
 def use_own_wallet():
     print()
     print('Insert your private keys:', end=' ')
     privkey_input = bytes.fromhex(input())
-    print_account(privkey_input)
+    privkey = SigningKey.from_string(privkey_input, curve=NIST192p)
+    keypair = Keypair.from_private_key(privkey)
+
+    message_client = MessageClient(light_client=True, own_key=keypair)
+    print_account(message_client)
+
+    while True:
+        print('What would you like to do?')
+        print('1. Send ANC')
+        print('2. Receive ANC')
+        print('Input your choice:', end=" ")
+        choice = input()
+
+        SEND = 1
+        RECEIVE = 2
+
+        try:
+            choice = int(choice)
+            if choice != SEND and choice != RECEIVE:
+                raise ValueError('Invalid choice')
+        except ValueError:
+            print('Invalid choice, please try again.')
+            print()
+            continue
+
+        if choice == SEND:
+            send_transaction(message_client)
+            break
+        elif choice == RECEIVE:
+            # use_own_wallet()
+            break
 
 
 def send_receive_anc():
@@ -60,9 +119,9 @@ def main():
 
         if choice == GENERATE_WALLET:
             generate_wallet()
-            break
         elif choice == OWN_WALLET:
             use_own_wallet()
+        break
 
 
 if __name__ == "__main__":
