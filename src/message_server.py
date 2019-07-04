@@ -50,6 +50,13 @@ class MessageServer:
         self.message_client.start_query_worker()
         return request.Response(body=b'')
 
+    def check_txstatus(self, request):
+        request_tx = messages_pb2.RequestTransaction()
+        request_tx.ParseFromString(request.body)
+        txn = self.message_client.dag.transactions[request_tx.hash]
+        msg = txn.SerializeToString()
+        return request.Response(body=msg)
+
     def check_balance(self, request):
         check_balance = messages_pb2.CheckBalance()
         check_balance.ParseFromString(request.body)
@@ -67,9 +74,6 @@ class MessageServer:
         msg = balance_response.SerializeToString()
 
         return request.Response(body=msg)
-
-    def check_txstatus(self, request):
-        pass
 
     def handle_message(self, request):
         raw_msg = request.body

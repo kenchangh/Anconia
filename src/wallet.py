@@ -95,6 +95,40 @@ def send_receive_anc():
     print('2. Receive ANC to another user')
 
 
+def check_tx():
+    txhash = None
+
+    while True:
+        print()
+        print('Enter your transaction hash:', end=" ")
+        txhash = input()
+
+        if len(txhash) != 64:
+            print('Invalid transaction hash!')
+            print()
+            continue
+        else:
+            break
+
+    message_client = MessageClient(light_client=True)
+    txn = message_client.check_tx_status(txhash)
+
+    print()
+
+    if not txn.accepted:
+        print('Your transaction is not accepted yet.')
+    else:
+        print('Your transaction is accepted.')
+    if not txn.chit and txn.queried:
+        print('Your transaction has no early commitments yet.')
+    elif txn.queried and txn.chit:
+        print('Your transaction has early commitments.')
+
+    print()
+    print('RAW TRANSACTION:')
+    print(txn)
+
+
 def main():
     print('Welcome to Anconia blockchain.')
 
@@ -102,15 +136,18 @@ def main():
         print('Please select one of the options below:')
         print('1. Generate wallet')
         print('2. Use own wallet')
+        print('3. Check transaction status')
         print('Input your choice:', end=" ")
         choice = input()
 
         GENERATE_WALLET = 1
         OWN_WALLET = 2
+        CHECK_TX = 3
 
         try:
             choice = int(choice)
-            if choice != 1 and choice != 2:
+            if choice != GENERATE_WALLET and choice != OWN_WALLET \
+                    and choice != CHECK_TX:
                 raise ValueError('Invalid choice')
         except ValueError:
             print('Invalid choice, please try again.')
@@ -121,6 +158,8 @@ def main():
             generate_wallet()
         elif choice == OWN_WALLET:
             use_own_wallet()
+        elif choice == CHECK_TX:
+            check_tx()
         break
 
 

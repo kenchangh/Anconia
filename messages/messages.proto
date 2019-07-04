@@ -66,6 +66,10 @@ message Transaction {
   optional bool accepted = 13;
 }
 
+message RequestTransaction {
+  required string hash = 1;
+}
+
 message SyncGraph {
   repeated Transaction transactions = 1;
   repeated ConflictSet conflicts = 2;

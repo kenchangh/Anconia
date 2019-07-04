@@ -137,6 +137,17 @@ class MessageClient:
         msg = common_msg.SerializeToString()
         return msg
     
+    def check_tx_status(self,txhash):
+        request_tx = messages_pb2.RequestTransaction()
+        request_tx.hash = txhash
+        msg = request_tx.SerializeToString()
+
+        peer = self.FIXED_PEERS[0]
+        response = self.send_message(peer, msg, path='/txstatus')
+        txn = messages_pb2.Transaction()
+        txn.ParseFromString(response)
+        return txn
+
     def check_balance(self):
         check_balance = messages_pb2.CheckBalance()
         check_balance.address = self.keypair.nice_address
