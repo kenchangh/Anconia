@@ -24,7 +24,7 @@ google-resumable-media==0.3.2
 googleapis-common-protos==1.6.0
 gossip-python==0.0.1
 grpcio==1.21.1
-httplib2==0.13.0
+httplib2==0.19.0
 httptools==0.0.13
 idna==2.8
 idna-ssl==1.1.0
